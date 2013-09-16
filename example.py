@@ -57,29 +57,30 @@ def main():
         """)
 
     log.info("created prepared statements")
-    for i in range(100):
+    for i in range(100000):
         # log.info("inserting row %d" % i)
         # session.execute(query, dict(key="key%d" % i, a='cat', b=datetime.now()))
-        session.execute(prepared.bind(("key%d" % i, 'rat', datetime.now())))
-
+        # session.execute(prepared.bind(("key%d" % i, 'rat', datetime.now())))
+        session.execute(prepared.bind(("key1", "rat%d" % i, datetime.now())))
 
 
     log.info("completed inserts")
-    future = session.execute_async("SELECT * FROM mytable")
+    # future = session.execute_async("SELECT * FROM mytable")
+    #
+    # try:
+    #     rows = future.result()
+    # except Exception:
+    #     log.exeception()
+    #
+    # for row in rows:
+    #     print row
+    #
+    # log.info("done")
 
-    try:
-        rows = future.result()
-    except Exception:
-        log.exeception()
-
-    for row in rows:
-        print row
-
-    log.info("done")
-
-    session.execute("DROP KEYSPACE " + KEYSPACE)
+    # session.execute("DROP KEYSPACE " + KEYSPACE)
 
     session.shutdown()
+    sleep(1)
 
 
 if __name__ == "__main__":
