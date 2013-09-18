@@ -14,12 +14,11 @@ log.addHandler(handler)
 
 from cassandra import ConsistencyLevel
 from cassandra.cluster import Cluster
-from cassandra.query import SimpleStatement
 
-KEYSPACE = "test"
+KEYSPACE = "testkeyspace"
 
 def main():
-    cluster = Cluster(['128.32.33.229'])
+    cluster = Cluster(['127.0.0.1'])
     session = cluster.connect()
 
     rows = session.execute("SELECT keyspace_name FROM system.schema_keyspaces")
@@ -46,10 +45,6 @@ def main():
         )
         """)
     log.info("created table")
-    query = SimpleStatement("""
-        INSERT INTO mytable (thekey, col1, timepoint)
-        VALUES (%(key)s, %(a)s, %(b)s)
-        """, consistency_level=ConsistencyLevel.ONE)
 
     prepared = session.prepare("""
         INSERT INTO mytable (thekey, col1, timepoint)
@@ -57,7 +52,7 @@ def main():
         """)
 
     log.info("created prepared statements")
-    for i in range(10000):
+    for i in range(100000):
         # log.info("inserting row %d" % i)
         # session.execute(query, dict(key="key%d" % i, a='cat', b=datetime.now()))
         # session.execute(prepared.bind(("key%d" % i, 'rat', datetime.now())))

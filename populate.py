@@ -16,40 +16,22 @@ from cassandra import ConsistencyLevel
 from cassandra.cluster import Cluster
 from cassandra.query import SimpleStatement
 
+import sys, getopt
+
+
 KEYSPACE = "test"
 
-def main():
+
+def main(argv):
+
+    nid = argv[0]
+    count = int(argv[1])
+
     cluster = Cluster(['128.32.33.229'])
     session = cluster.connect()
 
-    rows = session.execute("SELECT keyspace_name FROM system.schema_keyspaces")
-    if KEYSPACE in [row[0] for row in rows]:
-        log.info("dropping existing keyspace...")
-        session.execute("DROP KEYSPACE " + KEYSPACE)
-
-    log.info("creating keyspace...")
-    session.execute("""
-        CREATE KEYSPACE %s
-        WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '2' }
-        """ % KEYSPACE)
-
     log.info("setting keyspace...")
     session.set_keyspace(KEYSPACE)
-
-    log.info("creating table...")
-    session.execute("""
-        CREATE TABLE mytable (
-            thekey text,
-            col1 text,
-            timepoint timestamp,
-            PRIMARY KEY (thekey, col1)
-        )
-        """)
-    log.info("created table")
-    query = SimpleStatement("""
-        INSERT INTO mytable (thekey, col1, timepoint)
-        VALUES (%(key)s, %(a)s, %(b)s)
-        """, consistency_level=ConsistencyLevel.ONE)
 
     prepared = session.prepare("""
         INSERT INTO mytable (thekey, col1, timepoint)
@@ -57,12 +39,11 @@ def main():
         """)
 
     log.info("created prepared statements")
-    for i in range(10000):
+    for i in range(count):
         # log.info("inserting row %d" % i)
         # session.execute(query, dict(key="key%d" % i, a='cat', b=datetime.now()))
         # session.execute(prepared.bind(("key%d" % i, 'rat', datetime.now())))
-        session.execute(prepared.bind(("key1", "rat%d" % i, datetime.now())))
-
+        session.execute(prepared.bind((nid, "%d" % i, datetime.now())))
 
     log.info("completed inserts")
     # future = session.execute_async("SELECT * FROM mytable")
@@ -82,6 +63,5 @@ def main():
     session.shutdown()
     sleep(1)
 
-
 if __name__ == "__main__":
-    main()
+   main(sys.argv[1:])
