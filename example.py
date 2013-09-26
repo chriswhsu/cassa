@@ -13,13 +13,15 @@ handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(
 log.addHandler(handler)
 
 from cassandra import ConsistencyLevel
+# from cassandra.io.libevreactor import LibevConnection
 from cassandra.cluster import Cluster
 from cassandra.query import SimpleStatement
 
 KEYSPACE = "test"
 
 def main():
-    cluster = Cluster(['128.32.33.229'])
+    cluster = Cluster(['128.32.33.229'],port=7902)
+    # cluster.connection_class = LibevConnection
     session = cluster.connect()
 
     rows = session.execute("SELECT keyspace_name FROM system.schema_keyspaces")
