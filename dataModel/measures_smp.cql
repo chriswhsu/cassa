@@ -1,4 +1,4 @@
-use wherewhenwhat;
+use sense;
 
 insert into measures (name, description, uom, datatype) values ('aparPower', 'Apparent Power','mVA', 'float');
 insert into measures (name, description, uom, datatype) values ('actPower',  'Actual Power',  'mW',  'float');

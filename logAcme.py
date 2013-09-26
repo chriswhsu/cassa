@@ -11,7 +11,7 @@ import pytz
 from cassandra.cluster import Cluster
 
 
-KEYSPACE = "testks"
+KEYSPACE = "wherewhenwhat"
 
 log = logging.getLogger()
 log.setLevel('DEBUG')
@@ -24,7 +24,7 @@ update_time = {m: 0 for m in meters}
 
 conn = httplib.HTTPConnection("192.168.0.105", 8080)
 
-cluster = Cluster(['127.0.0.1'])
+cluster = Cluster(['128.32.189.129'], port=7902)
 session = cluster.connect()
 
 log.info("setting keyspace...")

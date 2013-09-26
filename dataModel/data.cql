@@ -1,4 +1,4 @@
-use wherewhenwhat;
+use sense;
 
 drop table if exists data;
 
@@ -18,9 +18,9 @@ CREATE TABLE data (
   wind_dir float,
   wind_speed float,
   rfid_scan boolean,
-  PRIMARY KEY ((deviceID,day),timepoint)
+  PRIMARY KEY ((device_id,day),tp)
 ) WITH
-  clustering order by (timepoint DESC) AND
+  clustering order by (tp DESC) AND
   compression={'sstable_compression': 'SnappyCompressor'};
                                               
 

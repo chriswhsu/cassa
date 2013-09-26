@@ -1,6 +1,6 @@
-use wherewhenwhat;
+use sense;
 
-insert into data (deviceID,day,tp,indoor_tempC) values (1000001,'2013-09-01','2013-09-01 00:00:01',70);
+insert into data (deviceID,day,tp,temp) values (1000001,'2013-09-01','2013-09-01 00:00:01',70);
 insert into data (deviceID,day,tp,temperature) values (1000001,'2013-09-01','1368438171023',70);
 insert into data (deviceID,day,tp,temperature) values (1000001,'2013-09-01','1368438171024',70);
 insert into data (deviceID,day,tp,temperature) values (1000001,'2013-09-01','2013-09-01 00:00:02',71);

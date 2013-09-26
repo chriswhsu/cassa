@@ -1,4 +1,4 @@
-use wherewhenwhat;
+use sense;
 
 drop table if exists measures;
 

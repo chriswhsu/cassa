@@ -1,10 +1,10 @@
-use wherewhenwhat;
+use sense;
 
 truncate devices;
                                                                                            
-insert into devices (device_id,geohash,name,measures,tags) values (1,'9q9p3yyrn1','Acme1',{'aparPower','actPower','actEnergy'},{'make':'Acme'});
-insert into devices (device_id,geohash,name,measures,tags) values (2,'9q9p3yyrn3','Acme2',{'aparPower','actPower','actEnergy'},{'make':'Acme'});
-insert into devices (device_id,geohash,name,measures,tags) values (3,'9q9p3yyrn5','Acme3',{'aparPower','actPower','actEnergy'},{'make':'Acme'});
+insert into devices (device_id, geohash,name, external_identifier, measures, tags) values (1,'9q9p3yyrn1', 'Acme1', '936', {'aparPower','actPower','actEnergy'},{'make':'Acme'});
+insert into devices (device_id, geohash,name, external_identifier, measures, tags) values (2,'9q9p3yyrn3', 'Acme2', '94e', {'aparPower','actPower','actEnergy'},{'make':'Acme'});
+insert into devices (device_id, geohash,name, external_identifier, measures, tags) values (3,'9q9p3yyrn5', 'Acme3', '8b9', {'aparPower','actPower','actEnergy'},{'make':'Acme'});
 
 insert into devices (device_id,name,tags) values (4,'WeatherStation',{'make':'Davis','model':'VantagePro 2'});
 insert into devices (device_id,geohash,name,parent_device_id,measures) values (5,'9q9p3yyrna','Receiving Console',4,{'humidity','temp'});
