@@ -3,10 +3,9 @@ __author__ = 'chriswhsu'
 
 import logging
 import uuid
-from time import time
-from time import sleep
-import pytz
 import datetime
+
+import pytz
 import numpy
 
 
@@ -18,14 +17,11 @@ log.addHandler(handler)
 
 from cassandra.cluster import Cluster
 
-import sys
-
 
 KEYSPACE = "sense"
 
 
 def main():
-
     # cluster = Cluster(['128.32.33.229'])
     cluster = Cluster(['128.32.189.129'], port=7902)
     session = cluster.connect()
@@ -39,12 +35,12 @@ def main():
 
     utc_date = datetime.datetime(2013, 9, 27, 0, 0, 0, 0, utc)
 
+
     query = ("SELECT actenergy FROM data where device_id = ? and day = ? order by tp desc limit 100000")
 
     prepared = session.prepare(query)
 
-
-    future = session.execute_async(prepared.bind((myuuid,utc_date)))
+    future = session.execute_async(prepared.bind((myuuid, utc_date)))
 
     try:
         rows = future.result()
@@ -58,7 +54,6 @@ def main():
     log.info("done")
 
     session.shutdown()
-    sleep(1)
 
 
 if __name__ == "__main__":
