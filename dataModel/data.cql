@@ -3,7 +3,7 @@ use sense;
 drop table if exists data;
 
 CREATE TABLE data (
-  device_id int,
+  device_id uuid,
   day timestamp,
   tp timestamp,
   geohash text,

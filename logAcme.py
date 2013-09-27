@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 __author__ = 'chriswhsu'
 import httplib
 import json

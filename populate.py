@@ -1,5 +1,5 @@
-__author__ = 'chriswhsu'
 #!/usr/bin/env python
+__author__ = 'chriswhsu'
 
 import logging
 from time import sleep
