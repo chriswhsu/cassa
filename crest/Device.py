@@ -3,7 +3,9 @@ import uuid
 
 
 class Device:
-    def __init__(self, external_identifier, name, sw=None, deviceuuid=None, geohash=None, measures=None, tags=None,
+
+
+    def __init__(self, external_identifier, name, sw, deviceuuid=None, geohash=None, measures=None, tags=None,
                  parent_device_id=None):
         """ initialize new device object """
         self.external_identifier = external_identifier

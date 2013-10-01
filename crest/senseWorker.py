@@ -46,7 +46,7 @@ class SenseWorker(object):
         return device.deviceuuid
 
 
-    def getdevice(self, external_identifier):
+    def getdevices_by_external_id(self, external_identifier):
         global devices
         query = ("SELECT device_id from devices where external_identifier = ?")
         prepared = self.session.prepare(query)
@@ -60,6 +60,22 @@ class SenseWorker(object):
         except Exception:
             self.log.exeception()
         return devices
+
+    def getdevices_by_name(self, name):
+        global devices
+        query = ("SELECT device_id from devices where name = ?")
+        prepared = self.session.prepare(query)
+
+        future = self.session.execute_async(prepared.bind([name]))
+
+        try:
+            rows = future.result()
+            self.log.info ('We got %s rows' % len(rows))
+            devices = [row.device_id for row in rows]
+        except Exception:
+            self.log.exeception()
+        return devices
+
 
     def getdatarange(self, list_of_uuids, start_date, stop_date):
         rows = []
