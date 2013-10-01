@@ -10,36 +10,27 @@ from cassandra.cluster import Cluster
 
 
 class SenseWorker(object):
-    def __init__(self):
+    def __init__(self, test=False):
         config = ConfigParser.ConfigParser()
         config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'crest.cnf'))
 
-        log = logging.getLogger()
-        log.setLevel('DEBUG')
+        self.log = logging.getLogger()
+        self.log.setLevel('DEBUG')
         handler = logging.StreamHandler()
         handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
-        log.addHandler(handler)
+        self.log.addHandler(handler)
 
         self.cluster = Cluster([config.get("Cassandra", "Cluster")], port=config.getint("Cassandra", "Port"))
         self.session = self.cluster.connect()
-        log.info("setting keyspace...")
-        self.session.set_keyspace(config.get("Cassandra", "Keyspace"))
 
-    def register_device(self, external_identifier, name, deviceuuid=None, geohash=None, measures=None, tags=None,
-                        parent_device_id=None):
-        if deviceuuid is None:
-            deviceuuid = uuid.UUID()
-        prepared = self.session.prepare("""
-          insert into devices (device_id, geohash, name, external_identifier, measures, tags, parent_device_id)
-           values
-          (?, ?, ?, ?, ?, ?, ?)
-         """)
-        self.session.execute(prepared.bind((
-            deviceuuid, geohash, name, external_identifier,
-            measures,
-            tags,
-            parent_device_id)))
-        return deviceuuid
+        if test:
+            config_get = config.get("Cassandra", "TestKeyspace")
+            self.log.info("setting keyspace to %s"%config_get)
+            self.session.set_keyspace(config_get)
+        else:
+            config_get = config.get("Cassandra", "Keyspace")
+            self.log.info("setting keyspace to %s"%config_get)
+            self.session.set_keyspace(config_get)
 
     def reg_device(self, device):
         prepared = self.session.prepare("""
@@ -64,7 +55,7 @@ class SenseWorker(object):
 
         try:
             rows = future.result()
-            print ('We got %s rows' % len(rows))
+            self.log.info ('We got %s rows' % len(rows))
             devices = [row.device_id for row in rows]
         except Exception:
             self.log.exeception()
@@ -87,7 +78,7 @@ class SenseWorker(object):
 
         try:
             rows = future.result()
-            print ('We got %s rows' % len(rows))
+            self.log.info ('We got %s rows' % len(rows))
         except Exception:
             self.log.exeception()
         return rows

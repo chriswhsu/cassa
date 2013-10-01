@@ -1,10 +1,9 @@
 __author__ = 'chriswhsu'
 import uuid
-from crest import senseWorker
 
 
 class Device:
-    def __init__(self, external_identifier, name, deviceuuid=None, geohash=None, measures=None, tags=None,
+    def __init__(self, external_identifier, name, sw=None, deviceuuid=None, geohash=None, measures=None, tags=None,
                  parent_device_id=None):
         if deviceuuid is None:
             self.deviceuuid = uuid.uuid4()
@@ -19,6 +18,8 @@ class Device:
         self.tags = tags
         self.parent_device_id = parent_device_id
 
+        self.sns = sw
+
     def persist(self):
-        sns = senseWorker.SenseWorker()
-        return sns.reg_device(self)
+
+        return self.sns.reg_device(self)
