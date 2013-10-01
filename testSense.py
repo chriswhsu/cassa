@@ -9,20 +9,18 @@ from crest import Device
 
 class TestDeviceRetrieval(unittest.TestCase):
     # Create SenseWorker to maintain a single database connection throughout tests.
+
     sns = senseWorker.SenseWorker(test=True)
 
     def setUp(self):
         self.sns.log.info("truncating devices table.")
         self.sns.session.execute('truncate devices')
 
-
-
     def test_device_creation(self):
         """Test for successful persisting of a new device."""
         device = Device.Device(sw=self.sns, deviceuuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'),
                                external_identifier='tdc', name="tdc_name")
         device.persist()
-
 
     def test_single_external_id(self):
         """Test retrieval of device by external_identifier"""
