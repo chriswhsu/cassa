@@ -4,6 +4,7 @@ __author__ = 'chriswhsu'
 import logging
 from time import sleep
 import uuid
+import ConfigParser
 
 log = logging.getLogger()
 log.setLevel('DEBUG')

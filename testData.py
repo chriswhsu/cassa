@@ -7,16 +7,15 @@ from time import time
 import datetime
 import uuid
 import pytz
+from cassandra.cluster import Cluster
 
+KEYSPACE = "sense"
 log = logging.getLogger()
 log.setLevel('DEBUG')
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
 log.addHandler(handler)
 
-from cassandra.cluster import Cluster
-
-KEYSPACE = "sense"
 
 cluster = Cluster(['128.32.189.129'], port=7902)
 session = cluster.connect()

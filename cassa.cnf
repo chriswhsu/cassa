@@ -1,0 +1,9 @@
+[Cassandra]
+
+Cluster: localhost
+Port: 9042
+
+# Cluster: 128.32.189.129
+# Port: 7902
+
+Keyspace: sense
