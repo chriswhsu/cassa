@@ -1,10 +1,12 @@
 __author__ = 'chriswhsu'
 
-import crest.sense.senseworker
+from crest.sense.senseworker import SenseWorker
 
-sns = crest.sense.senseworker.SenseWorker(test = True)
+sns = SenseWorker(test=True)
 
 sns.session.execute("""drop table if exists data""")
+sns.log.info('dropped table data.')
+
 sns.session.execute("""CREATE TABLE data (
                           device_id uuid,
                           day timestamp,
@@ -27,3 +29,4 @@ sns.session.execute("""CREATE TABLE data (
                           compression={'sstable_compression': 'SnappyCompressor'}
                     """)
 
+sns.log.info('created table data.')

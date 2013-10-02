@@ -8,3 +8,9 @@ Port: 9042
 
 Keyspace: sense
 TestKeyspace: sense
+
+
+
+[Logging]
+
+Level: INFO
