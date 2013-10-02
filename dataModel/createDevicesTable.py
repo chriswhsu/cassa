@@ -6,14 +6,16 @@ sns = crest.senseWorker.SenseWorker(test = True)
 
 sns.session.execute("""drop table if exists devices""")
 sns.session.execute("""CREATE TABLE devices (
-                         device_id uuid,
+                         device_uuid uuid,
                          external_identifier text,
                          geohash text,
+                         latitude float,
+                         longitude float,
                          measures set<text>,
                          name text,
                          parent_device_id uuid,
                          tags map<text, text>,
-                         PRIMARY KEY (device_id)
+                         PRIMARY KEY (device_uuid)
                        ) WITH
                          bloom_filter_fp_chance=0.010000 AND
                          caching='KEYS_ONLY' AND
