@@ -7,7 +7,7 @@ import datetime
 
 from cassandra.cluster import Cluster
 
-from crest.sense.Device import Device
+from crest.sense.device import Device
 
 
 class SenseWorker(object):

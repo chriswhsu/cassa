@@ -1,8 +1,8 @@
 __author__ = 'chriswhsu'
 
-import crest.sense.senseWorker
+import crest.sense.senseworker
 
-sns = crest.sense.senseWorker.SenseWorker(test = True)
+sns = crest.sense.senseworker.SenseWorker(test = True)
 
 sns.session.execute("""drop table if exists devices""")
 sns.session.execute("""CREATE TABLE devices (

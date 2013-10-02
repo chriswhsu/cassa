@@ -1,5 +1,5 @@
-from crest.sense.Device import Device
-from crest.sense import senseWorker
+from crest.sense.device import Device
+from crest.sense import senseworker
 
 __author__ = 'chriswhsu'
 
@@ -10,7 +10,7 @@ import uuid
 class TestDevice(unittest.TestCase):
     # Create SenseWorker to maintain a single database connection throughout tests.
 
-    sns = senseWorker.SenseWorker()
+    sns = senseworker.SenseWorker()
 
     def tearDown(self):
         self.sns.log.info("setUp: truncating devices table.")
@@ -19,13 +19,13 @@ class TestDevice(unittest.TestCase):
     def test_device_creation(self):
         """Test for successful persisting of a new device."""
         device = Device(external_identifier='tdc', name="tdc_name",
-                               device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
+                        device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
         self.sns.reg_device(device)
 
     def test_single_external_id(self):
         """Test retrieval of device by external_identifier"""
         device = Device(external_identifier='testSingle', name='testDevice2',
-                               device_uuid=uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55'))
+                        device_uuid=uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55'))
         self.sns.reg_device(device)
         devices = self.sns.get_device_ids_by_external_id('testSingle')
         self.assertEqual(devices, [uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55')])
@@ -33,11 +33,11 @@ class TestDevice(unittest.TestCase):
     def test_multiple_external_ids(self):
         """Test creating multiple devices with same external_identifier and retrieving"""
         device = Device(external_identifier='test123', name='testDevice1',
-                               device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
+                        device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
         self.sns.reg_device(device)
 
         device = Device(external_identifier='test123', name='testDevice2',
-                               device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'))
+                        device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'))
         self.sns.reg_device(device)
 
         devices = self.sns.get_device_ids_by_external_id('test123')
@@ -52,17 +52,16 @@ class TestDevice(unittest.TestCase):
 
     def test_string_uuid(self):
         device = Device(external_identifier='tdp', name="tdp_name",
-                               device_uuid='117d661d-7e61-49ea-96a5-68c34e83db55')
+                        device_uuid='117d661d-7e61-49ea-96a5-68c34e83db55')
         result = self.sns.reg_device(device)
 
     def test_single_name(self):
         """Test retrieval of device by external_identifier"""
         device = Device(external_identifier='testSingle', name='testDevice2',
-                               device_uuid=uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55'))
+                        device_uuid=uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55'))
         self.sns.reg_device(device)
         devices = self.sns.get_device_ids_by_name('testDevice2')
         self.assertEqual(devices, [uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55')])
-
 
     def test_geohash(self):
         """Test retrieval by distance from geohash"""
@@ -83,10 +82,9 @@ class TestDevice(unittest.TestCase):
         self.assertEqual(len(devices), 1)
         self.assertEqual(devices, [target_device])
 
-
     def test_get_device(self):
         device1 = Device(external_identifier='tdc', name="tdc_name",
-                                device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
+                         device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
         device1_id = self.sns.reg_device(device1)
 
         device2 = self.sns.get_device(device1_id)
@@ -100,7 +98,7 @@ class TestDevice(unittest.TestCase):
 
 class TestSenseWorker(unittest.TestCase):
     def test_connection(self):
-        sns = senseWorker.SenseWorker(test=True)
+        sns = senseworker.SenseWorker(test=True)
         sns.log.info("create senseWorker")
 
 
