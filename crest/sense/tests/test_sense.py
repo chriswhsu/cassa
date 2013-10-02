@@ -46,7 +46,6 @@ class TestSenseWorker(unittest.TestCase):
         devices = self.sns.get_device_ids_by_external_id('testSingle')
         self.assertEqual(devices, [uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55')])
 
-
     def test_novel_uuid_device_creation(self):
         """Test creating novel device without specified UUID"""
         device = Device(external_identifier='tdc', name="tdc_name")
@@ -95,12 +94,12 @@ class TestSenseWorker(unittest.TestCase):
         """Test retrieval by distance from geohash"""
 
         target_device = self.sns.reg_device(
-            Device(external_identifier='geo1', name='geohash1', geohash='gcpvhep'))
-        self.sns.reg_device(Device(external_identifier='geo2', name='geohash2', latitude=51.5177893638,
+            Device(external_identifier='geo:1', name='geohash1', geohash='gcpvhep'))
+        self.sns.reg_device(Device(external_identifier='geo:2', name='geohash2', latitude=51.5177893638,
                                    longitude=-0.1417708396911))
-        self.sns.reg_device(Device(external_identifier='geo3', name='geohash2', geohash='gcpvhfb'))
+        self.sns.reg_device(Device(external_identifier='geo:3', name='geohash2', geohash='gcpvhfb'))
 
-        self.sns.reg_device(Device(external_identifier='geo4', name='geohash2', geohash='gcpvhfr'))
+        self.sns.reg_device(Device(external_identifier='geo:4', name='geohash2', geohash='gcpvhfr'))
 
         # There should be 3 points within 0.5 meters
         devices = self.sns.get_device_ids_by_geohash('gcpvhep', .5)

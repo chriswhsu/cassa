@@ -16,7 +16,7 @@ class SenseWorker(object):
         config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sense.cnf'))
 
         self.log = logging.getLogger()
-        self.log.setLevel('DEBUG')
+        self.log.setLevel(config.get("Logging", "Level"))
         self.handler = logging.StreamHandler()
         self.handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
         self.log.addHandler(self.handler)
@@ -34,7 +34,13 @@ class SenseWorker(object):
             self.session.set_keyspace(config_get)
 
     def reg_device(self, device):
-        import geohash
+
+        # enforce external_id uniqueness across entire device table.
+        check = self.session.execute("select * from devices where external_identifier = %s",
+                                     parameters=[device.external_identifier])
+        if len(check) > 0:
+            raise Exception("Device with the same external_identifier already exists")
+
 
         prepared = self.session.prepare("""
           insert into devices (device_uuid, geohash, name, external_identifier, measures, tags, parent_device_id,
@@ -42,12 +48,6 @@ class SenseWorker(object):
            values
           (?, ?, ?, ?, ?, ?, ?, ?, ?)
          """)
-
-        if (device.latitude and device.longitude) and not device.geohash:
-            device.geohash = geohash.encode(device.latitude, device.longitude)
-
-        if device.geohash and not (device.latitude or device.longitude):
-            (device.latitude, device.longitude) = geohash.decode(device.geohash)
 
         self.session.execute(prepared.bind((
             device.device_uuid, device.geohash, device.name, device.external_identifier,
@@ -69,9 +69,9 @@ class SenseWorker(object):
         self.log.info('We got %s rows' % len(rows))
 
         device = Device(external_identifier=rows[0].external_identifier, name=rows[0].name,
-                               device_uuid=rows[0].device_uuid, geohash=rows[0].geohash, measures=rows[0].measures,
-                               tags=rows[0].tags, parent_device_id=rows[0].parent_device_id, latitude=rows[0].latitude,
-                               longitude=rows[0].longitude)
+                        device_uuid=rows[0].device_uuid, geohash=rows[0].geohash, measures=rows[0].measures,
+                        tags=rows[0].tags, parent_device_id=rows[0].parent_device_id, latitude=rows[0].latitude,
+                        longitude=rows[0].longitude)
 
         return device
 
@@ -111,6 +111,7 @@ class SenseWorker(object):
         """
         import geohash
         import haversine
+
         query = "SELECT device_uuid, geohash from devices"
 
         try:
@@ -137,6 +138,9 @@ class SenseWorker(object):
     def get_device_uuids_by_tags(self):
         """ Return device_uuids that contain specific tags."""
         # TODO implement method get_device_uuids_by_tags
+        pass
+
+    def write_data(self, device_uuid):
         pass
 
     def get_data_range(self, list_of_uuids, start_date, stop_date):
