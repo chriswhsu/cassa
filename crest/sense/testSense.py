@@ -68,7 +68,8 @@ class TestDevice(unittest.TestCase):
 
         target_device = self.sns.reg_device(
             Device(external_identifier='geo1', name='geohash1', geohash='gcpvhep'))
-        self.sns.reg_device(Device(external_identifier='geo2', name='geohash2', geohash='gcpvhf8bb'))
+        self.sns.reg_device(Device(external_identifier='geo2', name='geohash2', latitude=51.5177893638,
+                                   longitude=-0.1417708396911))
         self.sns.reg_device(Device(external_identifier='geo2', name='geohash2', geohash='gcpvhfb'))
 
         self.sns.reg_device(Device(external_identifier='geo2', name='geohash2', geohash='gcpvhfr'))
@@ -81,6 +82,11 @@ class TestDevice(unittest.TestCase):
         devices = self.sns.get_device_ids_by_geohash('gcpvhep', 0)
         self.assertEqual(len(devices), 1)
         self.assertEqual(devices, [target_device])
+
+        # If we try to populat both geohash and lat / long we expect an exception.
+        with self.assertRaises(Exception): self.sns.reg_device(
+            Device(external_identifier='geo2', name='geohash2', geohash='gcpp', latitude=51,
+                   longitude=-0.14))
 
     def test_get_device(self):
         device1 = Device(external_identifier='tdc', name="tdc_name",
