@@ -66,14 +66,20 @@ class TestDevice(unittest.TestCase):
     def test_geohash(self):
         """Test retrieval by distance from geohash"""
 
-        Device.Device(sw=self.sns, external_identifier='geo1', name='geohash1', geohash='gcpvhep').persist()
+        target_device = Device.Device(sw=self.sns, external_identifier='geo1', name='geohash1', geohash='gcpvhep').persist()
         Device.Device(sw=self.sns, external_identifier='geo2', name='geohash2', geohash='gcpvhf8').persist()
         Device.Device(sw=self.sns, external_identifier='geo2', name='geohash2', geohash='gcpvhfb').persist()
 
         Device.Device(sw=self.sns, external_identifier='geo2', name='geohash2', geohash='gcpvhfr').persist()
 
-        devices = self.sns.getdevices_by_geohash('gcpvhep', 5)
+        # There should be 3 points within 0.5 meters
+        devices = self.sns.getdevices_by_geohash('gcpvhep', .5)
+        self.assertEqual(len(devices), 3)
 
+        # Only one at this exact point
+        devices = self.sns.getdevices_by_geohash('gcpvhep', 0)
+        self.assertEqual(len(devices), 1)
+        self.assertEqual(devices,[target_device])
 
 class TestSenseWorker(unittest.TestCase):
     def test_connection(self):

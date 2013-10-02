@@ -61,7 +61,7 @@ class SenseWorker(object):
             self.log.exeception()
 
     def getdevices_by_name(self, name):
-        query = ("SELECT device_id from devices where name = ?")
+        query = "SELECT device_id from devices where name = ?"
         prepared = self.session.prepare(query)
 
         future = self.session.execute_async(prepared.bind([name]))
@@ -74,19 +74,26 @@ class SenseWorker(object):
         except Exception:
             self.log.exeception()
 
-    def getdevices_by_geohash(self, geohash, meters):
+    def getdevices_by_geohash(self, geohash_value, meters):
+        import geohash
+        import haversine
 
-        query = ("SELECT device_id, geohash from devices")
+        query = "SELECT device_id, geohash from devices"
 
         try:
             rows = self.session.execute(query)
             self.log.info ('We got %s rows' % len(rows))
-            devices = [row.device_id for row in rows]
-            return devices
         except Exception:
-            self.log.exception('failed get devices query')
+            self.log.exception('failed query execution.')
             raise
+        target_point = geohash.decode(geohash_value)
 
+        # create list of devices whose distance is less than <meters> from geohash_value.
+        # first decode geohash to lat / long
+        # than calculated haversine distance between that point and target_point.
+        devices = [(row.device_id) for row in rows
+                   if haversine.haversine(target_point, geohash.decode(row.geohash)) <= meters ]
+        return devices
 
     def getdatarange(self, list_of_uuids, start_date, stop_date):
         rows = []
@@ -98,7 +105,7 @@ class SenseWorker(object):
         return rows;
 
     def getdata(self, uuid, utc_date):
-        query = ("SELECT actenergy, tp FROM data where device_id = ? and day = ?")
+        query = "SELECT actenergy, tp FROM data where device_id = ? and day = ?"
         prepared = self.session.prepare(query)
 
         future = self.session.execute_async(prepared.bind([uuid, utc_date]))
