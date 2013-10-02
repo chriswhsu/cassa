@@ -96,12 +96,13 @@ class SenseWorker(object):
             self.log.exeception()
 
     def get_device_ids_by_name(self, name):
-        query = "SELECT device_uuid from devices where name = ?"
-        prepared = self.session.prepare(query)
 
-        future = self.session.execute_async(prepared.bind([name]))
 
         try:
+            query = "SELECT device_uuid from devices where name = ?"
+            prepared = self.session.prepare(query)
+
+            future = self.session.execute_async(prepared.bind([name]))
             rows = future.result()
             self.log.info('We got %s rows' % len(rows))
             devices = [row.device_uuid for row in rows]
@@ -115,7 +116,6 @@ class SenseWorker(object):
         """
         import geohash
         import haversine
-
         query = "SELECT device_uuid, geohash from devices"
 
         try:
@@ -133,22 +133,33 @@ class SenseWorker(object):
                    if haversine.haversine(point, geohash.decode(row.geohash)) <= meters]
         return devices
 
-    def getdatarange(self, list_of_uuids, start_date, stop_date):
+
+    def get_device_uuids_by_measures(self):
+        """ Return device_uuids that are able to report certain measures."""
+        # TODO implment method get_device_uuids_by_measures
+        pass
+
+    def get_device_uuids_by_tags(self):
+        """ Return device_uuids that contain specific tags."""
+        # TODO implement method get_device_uuids_by_tags
+        pass
+
+    def get_data_range(self, list_of_uuids, start_date, stop_date):
         rows = []
         days = (stop_date + datetime.timedelta(days=1) - start_date).days
         for uuid in list_of_uuids:
             for x in range(days):
-                new_rows = self.getdata(uuid, start_date + datetime.timedelta(days=x))
+                new_rows = self.get_data(uuid, start_date + datetime.timedelta(days=x))
                 rows += new_rows
-        return rows;
+        return rows
 
-    def getdata(self, uuid, utc_date):
+    def get_data(self, uuid, utc_date):
         query = "SELECT actenergy, tp FROM data where device_uuid = ? and day = ?"
-        prepared = self.session.prepare(query)
-
-        future = self.session.execute_async(prepared.bind([uuid, utc_date]))
 
         try:
+            prepared = self.session.prepare(query)
+            future = self.session.execute_async(prepared.bind([uuid, utc_date]))
+
             rows = future.result()
             self.log.info('We got %s rows' % len(rows))
         except Exception:

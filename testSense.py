@@ -12,7 +12,7 @@ class TestDevice(unittest.TestCase):
 
     sns = senseWorker.SenseWorker()
 
-    def setUp(self):
+    def tearDown(self):
         self.sns.log.info("setUp: truncating devices table.")
         self.sns.session.execute('truncate devices')
 
