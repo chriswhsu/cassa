@@ -7,13 +7,13 @@ import datetime
 
 from cassandra.cluster import Cluster
 
-import Device
+from crest.sense.Device import Device
 
 
 class SenseWorker(object):
     def __init__(self, test=False):
         config = ConfigParser.ConfigParser()
-        config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'crest.cnf'))
+        config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), '../crest.cnf'))
 
         self.log = logging.getLogger()
         self.log.setLevel('DEBUG')
@@ -68,7 +68,7 @@ class SenseWorker(object):
         rows = future.result()
         self.log.info('We got %s rows' % len(rows))
 
-        device = Device.Device(external_identifier=rows[0].external_identifier, name=rows[0].name,
+        device = Device(external_identifier=rows[0].external_identifier, name=rows[0].name,
                                device_uuid=rows[0].device_uuid, geohash=rows[0].geohash, measures=rows[0].measures,
                                tags=rows[0].tags, parent_device_id=rows[0].parent_device_id, latitude=rows[0].latitude,
                                longitude=rows[0].longitude)

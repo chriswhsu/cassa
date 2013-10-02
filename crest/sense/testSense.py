@@ -1,10 +1,10 @@
+from crest.sense.Device import Device
+from crest.sense import senseWorker
+
 __author__ = 'chriswhsu'
 
 import unittest
 import uuid
-
-from crest import senseWorker
-from crest import Device
 
 
 class TestDevice(unittest.TestCase):
@@ -18,13 +18,13 @@ class TestDevice(unittest.TestCase):
 
     def test_device_creation(self):
         """Test for successful persisting of a new device."""
-        device = Device.Device(external_identifier='tdc', name="tdc_name",
+        device = Device(external_identifier='tdc', name="tdc_name",
                                device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
         self.sns.reg_device(device)
 
     def test_single_external_id(self):
         """Test retrieval of device by external_identifier"""
-        device = Device.Device(external_identifier='testSingle', name='testDevice2',
+        device = Device(external_identifier='testSingle', name='testDevice2',
                                device_uuid=uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55'))
         self.sns.reg_device(device)
         devices = self.sns.get_device_ids_by_external_id('testSingle')
@@ -32,11 +32,11 @@ class TestDevice(unittest.TestCase):
 
     def test_multiple_external_ids(self):
         """Test creating multiple devices with same external_identifier and retrieving"""
-        device = Device.Device(external_identifier='test123', name='testDevice1',
+        device = Device(external_identifier='test123', name='testDevice1',
                                device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
         self.sns.reg_device(device)
 
-        device = Device.Device(external_identifier='test123', name='testDevice2',
+        device = Device(external_identifier='test123', name='testDevice2',
                                device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'))
         self.sns.reg_device(device)
 
@@ -46,18 +46,18 @@ class TestDevice(unittest.TestCase):
 
     def test_novel_uuid_device_creation(self):
         """Test creating novel device without specified UUID"""
-        device = Device.Device(external_identifier='tdc', name="tdc_name")
+        device = Device(external_identifier='tdc', name="tdc_name")
         result = self.sns.reg_device(device)
         self.assertTrue(isinstance(result, uuid.UUID))
 
     def test_string_uuid(self):
-        device = Device.Device(external_identifier='tdp', name="tdp_name",
+        device = Device(external_identifier='tdp', name="tdp_name",
                                device_uuid='117d661d-7e61-49ea-96a5-68c34e83db55')
         result = self.sns.reg_device(device)
 
     def test_single_name(self):
         """Test retrieval of device by external_identifier"""
-        device = Device.Device(external_identifier='testSingle', name='testDevice2',
+        device = Device(external_identifier='testSingle', name='testDevice2',
                                device_uuid=uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55'))
         self.sns.reg_device(device)
         devices = self.sns.get_device_ids_by_name('testDevice2')
@@ -68,11 +68,11 @@ class TestDevice(unittest.TestCase):
         """Test retrieval by distance from geohash"""
 
         target_device = self.sns.reg_device(
-            Device.Device(external_identifier='geo1', name='geohash1', geohash='gcpvhep'))
-        self.sns.reg_device(Device.Device(external_identifier='geo2', name='geohash2', geohash='gcpvhf8bb'))
-        self.sns.reg_device(Device.Device(external_identifier='geo2', name='geohash2', geohash='gcpvhfb'))
+            Device(external_identifier='geo1', name='geohash1', geohash='gcpvhep'))
+        self.sns.reg_device(Device(external_identifier='geo2', name='geohash2', geohash='gcpvhf8bb'))
+        self.sns.reg_device(Device(external_identifier='geo2', name='geohash2', geohash='gcpvhfb'))
 
-        self.sns.reg_device(Device.Device(external_identifier='geo2', name='geohash2', geohash='gcpvhfr'))
+        self.sns.reg_device(Device(external_identifier='geo2', name='geohash2', geohash='gcpvhfr'))
 
         # There should be 3 points within 0.5 meters
         devices = self.sns.get_device_ids_by_geohash('gcpvhep', .5)
@@ -85,7 +85,7 @@ class TestDevice(unittest.TestCase):
 
 
     def test_get_device(self):
-        device1 = Device.Device(external_identifier='tdc', name="tdc_name",
+        device1 = Device(external_identifier='tdc', name="tdc_name",
                                 device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
         device1_id = self.sns.reg_device(device1)
 
