@@ -13,7 +13,6 @@ class TestDevice(unittest.TestCase):
     sns = senseWorker.SenseWorker()
 
     def setUp(self):
-
         self.sns.log.info("setUp: truncating devices table.")
         self.sns.session.execute('truncate devices')
 
@@ -63,6 +62,17 @@ class TestDevice(unittest.TestCase):
         device.persist()
         devices = self.sns.getdevices_by_name('testDevice2')
         self.assertEqual(devices, [uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55')])
+
+    def test_geohash(self):
+        """Test retrieval by distance from geohash"""
+
+        Device.Device(sw=self.sns, external_identifier='geo1', name='geohash1', geohash='gcpvhep').persist()
+        Device.Device(sw=self.sns, external_identifier='geo2', name='geohash2', geohash='gcpvhf8').persist()
+        Device.Device(sw=self.sns, external_identifier='geo2', name='geohash2', geohash='gcpvhfb').persist()
+
+        Device.Device(sw=self.sns, external_identifier='geo2', name='geohash2', geohash='gcpvhfr').persist()
+
+        devices = self.sns.getdevices_by_geohash('gcpvhep', 5)
 
 
 class TestSenseWorker(unittest.TestCase):

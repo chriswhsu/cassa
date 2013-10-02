@@ -16,9 +16,9 @@ class SenseWorker(object):
 
         self.log = logging.getLogger()
         self.log.setLevel('DEBUG')
-        handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
-        self.log.addHandler(handler)
+        self.handler = logging.StreamHandler()
+        self.handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+        self.log.addHandler(self.handler)
 
         self.cluster = Cluster([config.get("Cassandra", "Cluster")], port=config.getint("Cassandra", "Port"))
         self.session = self.cluster.connect()
@@ -47,7 +47,6 @@ class SenseWorker(object):
 
 
     def getdevices_by_external_id(self, external_identifier):
-        global devices
         query = ("SELECT device_id from devices where external_identifier = ?")
         prepared = self.session.prepare(query)
 
@@ -57,12 +56,11 @@ class SenseWorker(object):
             rows = future.result()
             self.log.info ('We got %s rows' % len(rows))
             devices = [row.device_id for row in rows]
+            return devices
         except Exception:
             self.log.exeception()
-        return devices
 
     def getdevices_by_name(self, name):
-        global devices
         query = ("SELECT device_id from devices where name = ?")
         prepared = self.session.prepare(query)
 
@@ -72,9 +70,22 @@ class SenseWorker(object):
             rows = future.result()
             self.log.info ('We got %s rows' % len(rows))
             devices = [row.device_id for row in rows]
+            return devices
         except Exception:
             self.log.exeception()
-        return devices
+
+    def getdevices_by_geohash(self, geohash, meters):
+
+        query = ("SELECT device_id, geohash from devices")
+
+        try:
+            rows = self.session.execute(query)
+            self.log.info ('We got %s rows' % len(rows))
+            devices = [row.device_id for row in rows]
+            return devices
+        except Exception:
+            self.log.exception('failed get devices query')
+            raise
 
 
     def getdatarange(self, list_of_uuids, start_date, stop_date):

@@ -4,7 +4,7 @@ import crest.senseWorker
 
 sns = crest.senseWorker.SenseWorker(test = True)
 
-sns.session.execute("""drop table devices""")
+sns.session.execute("""drop table if exists devices""")
 sns.session.execute("""CREATE TABLE devices (
                          device_id uuid,
                          external_identifier text,
