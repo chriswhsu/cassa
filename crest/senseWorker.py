@@ -68,14 +68,9 @@ class SenseWorker(object):
         rows = future.result()
         self.log.info('We got %s rows' % len(rows))
 
-        device = Device.Device(sw=self, device_uuid=rows[0].device_uuid,
-                               name=rows[0].name,
-                               external_identifier=rows[0].external_identifier,
-                               geohash=rows[0].geohash,
-                               measures=rows[0].measures,
-                               tags=rows[0].tags,
-                               parent_device_id=rows[0].parent_device_id,
-                               latitude=rows[0].latitude,
+        device = Device.Device(external_identifier=rows[0].external_identifier, name=rows[0].name,
+                               device_uuid=rows[0].device_uuid, geohash=rows[0].geohash, measures=rows[0].measures,
+                               tags=rows[0].tags, parent_device_id=rows[0].parent_device_id, latitude=rows[0].latitude,
                                longitude=rows[0].longitude)
 
         return device
