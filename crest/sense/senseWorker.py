@@ -13,7 +13,7 @@ from crest.sense.Device import Device
 class SenseWorker(object):
     def __init__(self, test=False):
         config = ConfigParser.ConfigParser()
-        config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), '../crest.cnf'))
+        config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sense.cnf'))
 
         self.log = logging.getLogger()
         self.log.setLevel('DEBUG')
