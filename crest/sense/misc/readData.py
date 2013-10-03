@@ -23,7 +23,7 @@ log.addHandler(handler)
 Config = ConfigParser.ConfigParser()
 
 #  look for config file in same directory as executable .py file.
-Config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'cassa.cnf'))
+Config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), '../sense.cnf'))
 
 KEYSPACE = Config.get("Cassandra", "Keyspace")
 
