@@ -33,14 +33,19 @@ class SenseWorker(object):
             self.log.info("setting keyspace to %s" % config_get)
             self.session.set_keyspace(config_get)
 
-    def reg_device(self, device):
+    def register_device(self, device):
 
         # enforce external_id uniqueness across entire device table.
         check = self.session.execute("select * from devices where external_identifier = %s",
                                      parameters=[device.external_identifier])
-        if len(check) > 0:
-            raise Exception("Device with the same external_identifier already exists")
+        if len(check) == 1:
+            if device.device_uuid == check[0].device_uuid:
+                pass
+            else:
+                raise Exception("Device with the same external_identifier already exists")
 
+        if len(check) > 1:
+            raise Exception("we should never have more than one, please resolve data issue.")
 
         prepared = self.session.prepare("""
           insert into devices (device_uuid, geohash, name, external_identifier, measures, tags, parent_device_id,
@@ -140,7 +145,26 @@ class SenseWorker(object):
         # TODO implement method get_device_uuids_by_tags
         pass
 
-    def write_data(self, device_uuid):
+    def write_data(self, device_uuid, timepoint, list_of_kvp):
+        # TODO figure out how to best create api for writing data.
+        prepared = session.prepare("""
+                                    Insert into ddata (deviceID,day,timepoint,feeds,event)
+                                    VALUES (?, ?, ?, ?, ?)
+                                    """)
+
+        log.info("created prepared statements")
+        #create utc datetime so we can remove time portion.
+        utc = pytz.utc
+        utc_datetime = datetime.datetime.fromtimestamp(ts, utc)
+        utc_date = utc_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        myValues = {'Power': Power, 'ApparentPower': ApparentPower, 'Energy': Energy}
+
+        session.execute(prepared.bind((ID, utc_date, ts, myValues, '')))
+        sleep(.5)
+
+    def write_bulk_data(self, device_uuid, some_kind_of_an_array_of_kvps):
+        # TODO figure out the best array structure
         pass
 
     def get_data_range(self, list_of_uuids, start_date, stop_date):

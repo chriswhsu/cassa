@@ -25,7 +25,7 @@ Config = ConfigParser.ConfigParser()
 #  look for config file in same directory as executable .py file.
 Config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), '../sense.cnf'))
 
-KEYSPACE = Config.get("Cassandra", "TestKeyspace")
+KEYSPACE = Config.get("Cassandra", "Keyspace")
 
 
 def main():
@@ -35,23 +35,22 @@ def main():
     log.info("setting keyspace...")
     session.set_keyspace(KEYSPACE)
 
-    myuuid = uuid.UUID('f47ac10b-58cc-4372-a567-0e02b2c3d8b8')
+    myuuid = uuid.UUID('10000002-0000-0000-0000-00000000094b')
 
     utc = pytz.utc
 
-    utc_date = datetime.datetime(2013, 10, 8, 0, 0, 0, 0, utc)
+    utc_date = datetime.datetime(2013, 10, 9, 0, 0, 0, 0, utc)
 
     query = ("SELECT actpower FROM data where device_id = ? and day = ?")
 
     prepared = session.prepare(query)
 
-    future = session.execute_async(prepared.bind([myuuid, utc_date]))
+    myuuid = uuid.UUID('10000001-0000-0000-0000-00000000094b')
 
-    try:
-        rows = future.result()
-        log.info ('We got %s rows' % len(rows))
-    except Exception:
-        log.exeception()
+    future = session.execute_async(prepared.bind([myuuid, utc_date]))
+    log.info("start")
+    rows = future.result()
+    log.info ('We got %s rows' % len(rows))
 
     power = [row.actpower for row in rows]
 
@@ -59,6 +58,50 @@ def main():
     log.info("Max Power: %d"%numpy.max(power))
     log.info("Mean Power: %d"%numpy.mean(power))
     log.info("done")
+
+    myuuid = uuid.UUID('10000002-0000-0000-0000-00000000094b')
+
+    future = session.execute_async(prepared.bind([myuuid, utc_date]))
+    log.info("start")
+    rows = future.result()
+    log.info ('We got %s rows' % len(rows))
+
+    power = [row.actpower for row in rows]
+
+    log.info("Min Power: %d"%numpy.min(power))
+    log.info("Max Power: %d"%numpy.max(power))
+    log.info("Mean Power: %d"%numpy.mean(power))
+    log.info("done")
+
+    myuuid = uuid.UUID('10000003-0000-0000-0000-00000000094b')
+
+    future = session.execute_async(prepared.bind([myuuid, utc_date]))
+    log.info("start")
+    rows = future.result()
+    log.info ('We got %s rows' % len(rows))
+
+    power = [row.actpower for row in rows]
+
+    log.info("Min Power: %d"%numpy.min(power))
+    log.info("Max Power: %d"%numpy.max(power))
+    log.info("Mean Power: %d"%numpy.mean(power))
+    log.info("done")
+
+    myuuid = uuid.UUID('10000004-0000-0000-0000-00000000094b')
+
+    future = session.execute_async(prepared.bind([myuuid, utc_date]))
+    log.info("start")
+    rows = future.result()
+    log.info ('We got %s rows' % len(rows))
+
+    power = [row.actpower for row in rows]
+
+    log.info("Min Power: %d"%numpy.min(power))
+    log.info("Max Power: %d"%numpy.max(power))
+    log.info("Mean Power: %d"%numpy.mean(power))
+    log.info("done")
+
+
 
     session.shutdown()
 

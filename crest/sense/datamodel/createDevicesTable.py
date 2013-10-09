@@ -2,7 +2,7 @@ __author__ = 'chriswhsu'
 
 from crest.sense.senseworker import SenseWorker
 
-sns = SenseWorker(test=True)
+sns = SenseWorker(test=False)
 
 # sns.session.execute("""drop table if exists devices""")
 # sns.log.info('dropped table devices.')
