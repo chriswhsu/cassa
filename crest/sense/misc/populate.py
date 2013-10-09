@@ -7,7 +7,7 @@ from datetime import datetime
 
 
 log = logging.getLogger()
-log.setLevel('DEBUG')
+log.setLevel('INFO')
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
 log.addHandler(handler)
@@ -20,6 +20,7 @@ import sys, getopt
 
 
 KEYSPACE = "test"
+dec = 3.1415
 
 
 def main(argv):
@@ -28,7 +29,7 @@ def main(argv):
     count = int(argv[1])
 
     # cluster = Cluster(['128.32.33.229'])
-    cluster = Cluster(['128.32.189.129'], port=7902)
+    cluster = Cluster(['128.32.189.228'])
     session = cluster.connect()
 
     log.info("setting keyspace...")
@@ -38,10 +39,10 @@ def main(argv):
     #     INSERT INTO mytable3 (theverylongkey, myfavoritecolumnone, veryprecisetimepoint)
     #     VALUES (?, ?, ?)
     #     """)
-        
+
     prepared = session.prepare("""
         INSERT INTO mytable2 (thekey, col1, timepoint, value)
-         VALUES (?, ?, ?,?)
+         VALUES (?, ?, ?, ?)
          """)
 
 
@@ -50,7 +51,7 @@ def main(argv):
         # log.info("inserting row %d" % i)
         # session.execute(query, dict(key="key%d" % i, a='cat', b=datetime.now()))
         # session.execute(prepared.bind(("key%d" % i, 'rat', datetime.now())))
-        session.execute(prepared.bind((nid, "%d" % i, datetime.now(), i)))
+        session.execute(prepared.bind((nid, str(i), datetime.now(), i/dec)))
 
         # session.execute(prepared2.bind((nid, "%d" % i, datetime.now())))
 

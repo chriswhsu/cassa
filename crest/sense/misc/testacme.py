@@ -3,55 +3,40 @@
 __author__ = 'chriswhsu'
 import httplib
 import json
+import time
 import datetime
 import logging
-import uuid
+from time import sleep
 
 import pytz
 
 from cassandra.cluster import Cluster
 
 
-KEYSPACE = "test"
+KEYSPACE = "wherewhenwhat"
 
 log = logging.getLogger()
-log.setLevel('INFO')
+log.setLevel('DEBUG')
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
 log.addHandler(handler)
 
+meters = ['936']
+update_time = {m: 0 for m in meters}
+
 conn = httplib.HTTPConnection("192.168.0.105", 8080)
 
-cluster = Cluster(['128.32.189.230'], port=9042)
-session = cluster.connect()
-
-log.info("setting keyspace...")
-session.set_keyspace(KEYSPACE)
-
-loop_count = 0
+sns = senseworker.SenseWorker(test=True)
 
 while True:
-    log.info('getting data with web request')
+    print datetime.datetime.now()
     conn.request("GET", "/data/+")
     r = conn.getresponse()
-    log.info('got response: ' + str(r.status) + ' ' + r.reason)
+    print r.status, r.reason
     dat_str = r.read()
     reading = json.loads(dat_str)
-    log.info('parsed into json.')
 
-    if loop_count ==0:
-        update_time = {m: 0 for m in reading['/costas_acmes']['Contents']}
-
-    loop_count += 1
-
-
-
-    for i in reading['/costas_acmes']['Contents']:
-
-        i = str(i)
-
-        log.info("processing %s", i)
-
+    for i in meters:
         v = {'ap': [False, False], 'tp': [False, False], 'te': [False, False]}
         t = {'ap': [False, False], 'tp': [False, False], 'te': [False, False]}
 
@@ -96,30 +81,30 @@ while True:
                 ApparentPower = v['ap'][reading_id]
                 Energy = v['te'][reading_id]
 
-                log.info(
-                    "ID=%s, Time=%s, Power=%s, AparrentPower=%s, Energy=%s" % (ID, ts, Power, ApparentPower, Energy))
+                print(
+                "ID=%s, Time=%s, Power=%s, AparrentPower=%s, Energy=%s" % (ID, ts, Power, ApparentPower, Energy))
 
                 prepared = session.prepare("""
-                                            Insert into data (device_id, day, tp, actenergy, actpower, aparpower)
-                                            VALUES (?, ?, ?, ?, ?, ?)
+                                            Insert into ddata (deviceID,day,timepoint,feeds,event)
+                                            VALUES (?, ?, ?, ?, ?)
                                             """)
 
-                log.debug("created prepared statements")
+                log.info("created prepared statements")
                 #create utc datetime so we can remove time portion.
                 utc = pytz.utc
-                utc_datetime = datetime.datetime.fromtimestamp(ts, utc)
+                utc_datetime = datetime.datetime.fromtimestamp(ts,utc)
                 utc_date = utc_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
 
-                for p in range(40000000,40000009):
-                    dev_uuid = uuid.UUID(str(p) + '-58cc-4372-a567-0e02b2c3d' + i)
-                    session.execute(prepared.bind((dev_uuid, utc_date, ts, Energy, Power, ApparentPower)))
-                    log.debug("executed prepared statements")
+                myValues = {'Power': Power, 'ApparentPower': ApparentPower, 'Energy': Energy}
+
+                session.execute(prepared.bind((ID, utc_date, ts, myValues, '')))
+                sleep(.5)
 
         else:
-            log.info(i + ' skipping.')
-            # end for loop
+            print i, '---'
+        # end for loop
 
-            # time.sleep(0.1)
-            # end while loop (1 sec / loop)
+    time.sleep(0.8)
+    # end while loop (1 sec / loop)
 
 conn.close()

@@ -4,8 +4,8 @@ from crest.sense.senseworker import SenseWorker
 
 sns = SenseWorker(test=True)
 
-sns.session.execute("""drop table if exists data""")
-sns.log.info('dropped table data.')
+# sns.session.execute("""drop table if exists data""")
+# sns.log.info('dropped table data.')
 
 sns.session.execute("""CREATE TABLE data (
                           device_id uuid,

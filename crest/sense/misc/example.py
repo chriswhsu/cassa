@@ -20,20 +20,11 @@ from cassandra.query import SimpleStatement
 KEYSPACE = "test"
 
 def main():
-    cluster = Cluster(['128.32.33.229'],port=7902)
+    cluster = Cluster(['128.32.189.228'],port=9042)
     # cluster.connection_class = LibevConnection
     session = cluster.connect()
 
     rows = session.execute("SELECT keyspace_name FROM system.schema_keyspaces")
-    if KEYSPACE in [row[0] for row in rows]:
-        log.info("dropping existing keyspace...")
-        session.execute("DROP KEYSPACE " + KEYSPACE)
-
-    log.info("creating keyspace...")
-    session.execute("""
-        CREATE KEYSPACE %s
-        WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '2' }
-        """ % KEYSPACE)
 
     log.info("setting keyspace...")
     session.set_keyspace(KEYSPACE)
@@ -59,7 +50,7 @@ def main():
         """)
 
     log.info("created prepared statements")
-    for i in range(10000):
+    for i in range(100000):
         # log.info("inserting row %d" % i)
         # session.execute(query, dict(key="key%d" % i, a='cat', b=datetime.now()))
         # session.execute(prepared.bind(("key%d" % i, 'rat', datetime.now())))

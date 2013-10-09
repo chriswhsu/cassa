@@ -1,13 +1,13 @@
 [Cassandra]
 
-Cluster: localhost
+#Cluster: localhost
+#Port: 9042
+
+Cluster: 128.32.189.228
 Port: 9042
 
-#Cluster: 128.32.189.129
-#Port: 7902
-
 Keyspace: sense
-TestKeyspace: sense
+TestKeyspace: test
 
 
 

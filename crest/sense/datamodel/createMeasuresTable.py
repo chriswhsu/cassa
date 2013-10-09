@@ -4,8 +4,8 @@ from crest.sense.senseworker import SenseWorker
 
 sns = SenseWorker(test=True)
 
-sns.session.execute("""drop table if exists measures""")
-sns.log.info('dropped table measures.')
+# sns.session.execute("""drop table if exists measures""")
+# sns.log.info('dropped table measures.')
 
 sns.session.execute("""
                         CREATE TABLE measures (

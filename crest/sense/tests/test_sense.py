@@ -26,10 +26,10 @@ class TestDevice(unittest.TestCase):
 class TestSenseWorker(unittest.TestCase):
     # Create SenseWorker to maintain a single database connection throughout tests.
 
-    sns = senseworker.SenseWorker()
+    sns = senseworker.SenseWorker(test=True)
 
     def tearDown(self):
-        self.sns.log.info("setUp: truncating devices table.")
+        self.sns.log.info("tearDown: truncating devices table.")
         self.sns.session.execute('truncate devices')
 
     def test_device_creation(self):
@@ -91,10 +91,14 @@ class TestSenseWorker(unittest.TestCase):
 
 
     def test_allow_same_device_id(self):
+        from time import sleep
+
         """ Same external identifier allowed if device_uuid is the same."""
         device = Device(external_identifier='test123', name='testDevice1',
                         device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
         self.sns.register_device(device)
+
+        sleep(2) # need to sleep to prevent unordered updates.
 
         device = Device(external_identifier='test123', name='testDevice10',
                         device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))

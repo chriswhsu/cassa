@@ -14,7 +14,7 @@ import logging
 
 
 log = logging.getLogger()
-log.setLevel('DEBUG')
+log.setLevel('INFO')
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
 log.addHandler(handler)
@@ -25,7 +25,7 @@ Config = ConfigParser.ConfigParser()
 #  look for config file in same directory as executable .py file.
 Config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), '../sense.cnf'))
 
-KEYSPACE = Config.get("Cassandra", "Keyspace")
+KEYSPACE = Config.get("Cassandra", "TestKeyspace")
 
 
 def main():
@@ -35,18 +35,13 @@ def main():
     log.info("setting keyspace...")
     session.set_keyspace(KEYSPACE)
 
-    myuuid = uuid.UUID('c37d661d-7e61-49ea-96a5-68c34e83db3a')
-    myuuid2 = uuid.UUID('a37d661d-7e61-49ea-96a5-68c34e83db3a')
-    uuids = (myuuid, myuuid2)
+    myuuid = uuid.UUID('f47ac10b-58cc-4372-a567-0e02b2c3d8b8')
 
     utc = pytz.utc
 
-    utc_date = datetime.datetime(2013, 9, 27, 0, 0, 0, 0, utc)
-    utc_date2 = datetime.datetime(2013, 9, 27, 0, 0, 0, 0, utc)
+    utc_date = datetime.datetime(2013, 10, 8, 0, 0, 0, 0, utc)
 
-    mydates = (utc_date, utc_date2)
-
-    query = ("SELECT actenergy, tp FROM data where device_id = ? and day = ?")
+    query = ("SELECT actpower FROM data where device_id = ? and day = ?")
 
     prepared = session.prepare(query)
 
@@ -54,14 +49,15 @@ def main():
 
     try:
         rows = future.result()
-        print ('We got %s rows' % len(rows))
+        log.info ('We got %s rows' % len(rows))
     except Exception:
         log.exeception()
 
-    energy = [row.actenergy for row in rows]
+    power = [row.actpower for row in rows]
 
-    print numpy.max(energy)
-    print numpy.mean(energy)
+    log.info("Min Power: %d"%numpy.min(power))
+    log.info("Max Power: %d"%numpy.max(power))
+    log.info("Mean Power: %d"%numpy.mean(power))
     log.info("done")
 
     session.shutdown()
