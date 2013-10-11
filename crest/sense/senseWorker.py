@@ -127,6 +127,8 @@ class SenseWorker(object):
             raise
         point = geohash.decode(geohash_value)
 
+
+
         # create list of devices whose distance is less than <meters> from geohash_value.
         # first decode geohash to lat / long
         # than calculated haversine distance between that point and target
