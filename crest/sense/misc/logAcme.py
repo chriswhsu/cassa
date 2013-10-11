@@ -15,8 +15,6 @@ from cassandra.cluster import Cluster
 
 
 def main(argv):
-
-
     def get_json():
 
         log.info('------getting data with web request')
@@ -27,9 +25,6 @@ def main(argv):
         reading = json.loads(dat_str)
         log.info('parsed into json.')
         return reading
-
-
-
 
 
     threadnum = int(argv[0])
@@ -54,12 +49,9 @@ def main(argv):
 
     pool = ThreadPool(processes=1)
 
-
     while True:
         log.info("submitting async call")
         async_result = pool.apply_async(get_json, ())
-
-
 
         prepared = session.prepare("""
                             Insert into data (device_id, day, tp, actenergy, actpower, aparpower)
@@ -115,7 +107,6 @@ def main(argv):
                     power = v['tp'][reading_id]
                     apparentpower = v['ap'][reading_id]
                     energy = v['te'][reading_id]
-
 
                     utc_datetime = datetime.datetime.fromtimestamp(ts, utc)
                     utc_date = utc_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
