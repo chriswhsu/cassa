@@ -121,7 +121,6 @@ def main(argv):
 
                         trd = threading.Thread(target=cass_write, args=(
                             session, prepared, dev_uuid, utc_date, ts, energy, power, apparentpower))
-
                         threads.append(trd)
                         trd.start()
 
