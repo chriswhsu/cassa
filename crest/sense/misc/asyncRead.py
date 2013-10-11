@@ -5,7 +5,7 @@ import datetime
 import ConfigParser
 import os
 import logging
-import thread
+import threading
 from time import sleep
 import uuid
 import pytz
@@ -27,15 +27,7 @@ Config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), '../sense.c
 KEYSPACE = Config.get("Cassandra", "Keyspace")
 
 
-def runquery_async(cluster, myuuid, utcdate):
-    session = cluster.connect()
-
-    log.info("setting keyspace...")
-    session.set_keyspace(KEYSPACE)
-
-    query = ("SELECT actpower FROM data where device_id = ? and day in (?)")
-
-    prepared = session.prepare(query)
+def runquery_async(session, prepared, myuuid, utcdate):
 
     future = session.execute_async(prepared.bind([myuuid, utcdate]))
 
@@ -58,7 +50,6 @@ def runquery_async(cluster, myuuid, utcdate):
 
 
 def runquery(session, prepared, myuuid, utcdate):
-
     future = session.execute_async(prepared.bind([myuuid, utcdate]))
 
     rows = future.result()
@@ -72,7 +63,7 @@ def runquery(session, prepared, myuuid, utcdate):
     log.info("Min Power: %d" % numpy.min(power))
     log.info("Max Power: %d" % numpy.max(power))
     log.info("Mean Power: %d" % numpy.mean(power))
-    log.info("done")
+    log.info("--------")
 
 
 def main():
@@ -80,7 +71,7 @@ def main():
 
     utc = pytz.utc
 
-    utc_date = datetime.datetime(2013, 10, 9, 0, 0, 0, 0, utc)
+    utc_date = datetime.datetime(2013, 10, 10, 0, 0, 0, 0, utc)
 
     mylist = {'10000000-0000-0000-0000-00000000094e', '10000001-0000-0000-0000-0000000008b8',
               '10000002-0000-0000-0000-0000000008b9', '10000003-0000-0000-0000-0000000008ba',
@@ -94,16 +85,22 @@ def main():
     query = ("SELECT actpower FROM data where device_id = ? and day in (?)")
     prepared = session.prepare(query)
 
+    threads = []
+
     for myuuid in mylist:
 
+        #runquery(session, prepared, uuid.UUID(myuuid), utc_date)
+        t = threading.Thread(target=runquery, args=(session, prepared, uuid.UUID(myuuid), utc_date))
+        t.start()
+        threads.append(t)
+        #runquery_async(session, prepared, uuid.UUID(myuuid), utc_date)
+    log.info("done spawning threads")
 
+    #sleep(10)
+    for t in range(len(threads)):
+        threads[t].join()
 
-      #  runquery(cluster, uuid.UUID(myuuid), utc_date)
-
-        thread.start_new_thread(runquery, (session, prepared, uuid.UUID(myuuid), utc_date))
-      #  runquery_async(cluster, uuid.UUID(myuuid), utc_date)
-
-    sleep(10)
+    log.info("done waiting for execution")
 
 
 if __name__ == "__main__":
