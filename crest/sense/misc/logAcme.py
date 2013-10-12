@@ -8,6 +8,7 @@ import logging
 import uuid
 import sys
 from multiprocessing.pool import ThreadPool
+from multiprocessing import TimeoutError
 
 import pytz
 
@@ -129,8 +130,12 @@ def main(argv):
         log.info("finished writing to DB")
 
         if loop_count > 0:
-            reading = async_result.get()
-            log.info("got async results")
+            # don't wait more than 300 ms, there are other readings to be had...
+            try:
+                reading = async_result.get(timeout=300)
+                log.info("got async results")
+            except TimeoutError:
+                log.info("timed out")
 
     conn.close()
 
