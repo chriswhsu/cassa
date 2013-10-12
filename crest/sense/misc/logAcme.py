@@ -15,6 +15,7 @@ from cassandra.cluster import Cluster
 
 
 def main(argv):
+
     def get_json():
 
         log.info('------getting data with web request')
@@ -22,10 +23,9 @@ def main(argv):
         r = conn.getresponse()
         log.info('got response: ' + str(r.status) + ' ' + r.reason)
         dat_str = r.read()
-        reading = json.loads(dat_str)
+        results = json.loads(dat_str)
         log.info('parsed into json.')
-        return reading
-
+        return results
 
     threadnum = int(argv[0])
     insertcount = int(argv[1])

@@ -11,6 +11,7 @@ import uuid
 import pytz
 import numpy
 from cassandra.cluster import Cluster
+from multiprocessing.pool import ThreadPool
 
 
 log = logging.getLogger()
@@ -71,7 +72,7 @@ def main():
 
     utc = pytz.utc
 
-    utc_date = datetime.datetime(2013, 10, 10, 0, 0, 0, 0, utc)
+    utc_date = datetime.datetime(2013, 10, 11, 0, 0, 0, 0, utc)
 
     mylist = {'10000000-0000-0000-0000-00000000094e', '10000001-0000-0000-0000-0000000008b8',
               '10000002-0000-0000-0000-0000000008b9', '10000003-0000-0000-0000-0000000008ba',
