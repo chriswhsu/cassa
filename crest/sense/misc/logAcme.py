@@ -8,8 +8,7 @@ import datetime
 import logging
 import uuid
 import sys
-from multiprocessing.pool import ThreadPool
-from multiprocessing.pool import TimeoutError
+from multiprocessing.pool import ThreadPool, TimeoutError
 
 import pytz
 
@@ -125,7 +124,7 @@ def main(argv):
         try:
             reading = read1.get(timeout=TIMEOUT)
         except TimeoutError:
-            log.error("timeout reading")
+            log.info("timeout reading, give up and continue.")
 
         if loop_count == 0:
             update_time = {m: 0 for m in reading['/costas_acmes']['Contents']}
@@ -136,7 +135,7 @@ def main(argv):
         try:
             done_writing = write1.get(timeout=TIMEOUT)
         except TimeoutError:
-            log.error("timeout writing")
+            log.info("timeout writing, give up and continue.")
         loop_count += 1
 
     conn.close()

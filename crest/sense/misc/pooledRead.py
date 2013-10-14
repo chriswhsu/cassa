@@ -11,7 +11,8 @@ import uuid
 import pytz
 import numpy
 from cassandra.cluster import Cluster
-from multiprocessing.pool import ThreadPool
+from multiprocessing.pool import ThreadPool, TimeoutError
+
 
 
 log = logging.getLogger()
@@ -28,43 +29,12 @@ Config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), '../sense.c
 KEYSPACE = Config.get("Cassandra", "Keyspace")
 
 
-def runquery_async(session, prepared, myuuid, utcdate):
-
-    future = session.execute_async(prepared.bind([myuuid, utcdate]))
-
-    log.info("start")
-
-    def log_results(rows):
-        log.info('We got %s rows' % len(rows))
-
-        power = [row.actpower for row in rows]
-
-        log.info("Min Power: %d" % numpy.min(power))
-        log.info("Max Power: %d" % numpy.max(power))
-        log.info("Mean Power: %d" % numpy.mean(power))
-        log.info("done")
-
-    def log_error(exc):
-        log.error("Operation failed: %s", exc)
-
-    future.add_callbacks(log_results, log_error)
-
-
 def runquery(session, prepared, myuuid, utcdate):
     future = session.execute_async(prepared.bind([myuuid, utcdate]))
 
-    rows = future.result()
-
     log.info("start")
 
-    log.info('We got %s rows' % len(rows))
-
-    power = [row.actpower for row in rows]
-
-    log.info("Min Power: %d" % numpy.min(power))
-    log.info("Max Power: %d" % numpy.max(power))
-    log.info("Mean Power: %d" % numpy.mean(power))
-    log.info("--------")
+    return future.result()
 
 
 def main():
@@ -72,7 +42,7 @@ def main():
 
     utc = pytz.utc
 
-    utc_date = datetime.datetime(2013, 10, 11, 0, 0, 0, 0, utc)
+    utc_date = datetime.datetime(2013, 10, 13, 0, 0, 0, 0, utc)
 
     mylist = {'10000000-0000-0000-0000-00000000094e', '10000001-0000-0000-0000-0000000008b8',
               '10000002-0000-0000-0000-0000000008b9', '10000003-0000-0000-0000-0000000008ba',
@@ -85,21 +55,33 @@ def main():
 
     query = ("SELECT actpower FROM data where device_id = ? and day in (?)")
     prepared = session.prepare(query)
-
-    threads = []
+    pool = ThreadPool(processes=len(mylist))
+    r = range(len(mylist))
+    results =[]
+    x = 0
 
     for myuuid in mylist:
 
-        #runquery(session, prepared, uuid.UUID(myuuid), utc_date)
-        t = threading.Thread(target=runquery, args=(session, prepared, uuid.UUID(myuuid), utc_date))
-        t.start()
-        threads.append(t)
-        #runquery_async(session, prepared, uuid.UUID(myuuid), utc_date)
+        r[x] = pool.apply_async(func=runquery, args=(session, prepared, uuid.UUID(myuuid), utc_date))
+        x += 1
+
     log.info("done spawning threads")
 
     #sleep(10)
-    for t in range(len(threads)):
-        threads[t].join()
+    for t in r:
+        results += t.get(timeout=5000)
+
+
+
+    log.info('We got %s rows' % len(results))
+
+    power = [row.actpower for row in results]
+
+    log.info("Min Power: %d" % numpy.min(power))
+    log.info("Max Power: %d" % numpy.max(power))
+    log.info("Mean Power: %d" % numpy.mean(power))
+    log.info("--------")
+
 
     log.info("done waiting for execution")
 
