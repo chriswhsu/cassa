@@ -26,7 +26,7 @@ sns.session.execute("""CREATE TABLE data (
                           PRIMARY KEY ((device_id,day),tp)
                         ) WITH
                           clustering order by (tp DESC) AND
-                          compression={'sstable_compression': 'SnappyCompressor'}
+                          compression={'sstable_compression': 'SnappyCompressor', 'chunk_length_kb': '512'}
                     """)
 
 sns.log.info('created table data.')

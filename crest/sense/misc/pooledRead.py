@@ -1,17 +1,19 @@
 #!/usr/bin/env python
+THREADS = 6
 __author__ = 'chriswhsu'
 
 import datetime
 import ConfigParser
 import os
 import logging
-import threading
-from time import sleep
 import uuid
+from multiprocessing.pool import ThreadPool
+
 import pytz
 import numpy
 from cassandra.cluster import Cluster
-from multiprocessing.pool import ThreadPool, TimeoutError
+from dateutil import rrule
+
 
 
 
@@ -42,11 +44,15 @@ def main():
 
     utc = pytz.utc
 
-    utc_date = datetime.datetime(2013, 10, 13, 0, 0, 0, 0, utc)
+    utc_date_start = datetime.datetime(2013, 10, 14, 0, 0, 0, 0, utc)
+
+    utc_date_end = datetime.datetime(2013, 10, 14, 0, 0, 0, 0, utc)
 
     mylist = {'10000000-0000-0000-0000-00000000094e', '10000001-0000-0000-0000-0000000008b8',
               '10000002-0000-0000-0000-0000000008b9', '10000003-0000-0000-0000-0000000008ba',
-              '10000004-0000-0000-0000-0000000008d4', '10000005-0000-0000-0000-0000000008d8'}
+              '10000004-0000-0000-0000-0000000008d4', '10000005-0000-0000-0000-0000000008d8',
+              '10000006-0000-0000-0000-0000000008e3', '10000007-0000-0000-0000-0000000008e4',
+              '10000008-0000-0000-0000-0000000008e5', '10000009-0000-0000-0000-0000000008e6'}
 
     session = cluster.connect()
 
@@ -55,33 +61,33 @@ def main():
 
     query = ("SELECT actpower FROM data where device_id = ? and day in (?)")
     prepared = session.prepare(query)
-    pool = ThreadPool(processes=len(mylist))
-    r = range(len(mylist))
-    results =[]
+    pool = ThreadPool(processes=THREADS)
+    r = []
+    results = []
     x = 0
 
     for myuuid in mylist:
-
-        r[x] = pool.apply_async(func=runquery, args=(session, prepared, uuid.UUID(myuuid), utc_date))
-        x += 1
+        for the_date in list(rrule.rrule(rrule.DAILY, count=(utc_date_end - utc_date_start).days + 1, dtstart=utc_date_start)):
+            r.append(pool.apply_async(func=runquery, args=(session, prepared, uuid.UUID(myuuid), the_date)))
+            x += 1
 
     log.info("done spawning threads")
 
-    #sleep(10)
     for t in r:
+        log.info("Got a response")
         results += t.get(timeout=5000)
 
+        log.info('We have %s rows' % len(results))
 
+    if results:
+        power = [row.actpower for row in results]
 
-    log.info('We got %s rows' % len(results))
-
-    power = [row.actpower for row in results]
-
-    log.info("Min Power: %d" % numpy.min(power))
-    log.info("Max Power: %d" % numpy.max(power))
-    log.info("Mean Power: %d" % numpy.mean(power))
-    log.info("--------")
-
+        log.info("Min Power: %d" % numpy.min(power))
+        log.info("Max Power: %d" % numpy.max(power))
+        log.info("Mean Power: %d" % numpy.mean(power))
+        log.info("--------")
+    else:
+        log.info("No Results")
 
     log.info("done waiting for execution")
 

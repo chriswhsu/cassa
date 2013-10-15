@@ -1,2 +1,2 @@
-CREATE KEYSPACE if not exists sense
-     WITH replication = {'class': 'SimpleStrategy', 'replication_factor' : 1};
+CREATE KEYSPACE sense
+     WITH replication = {'class': 'NetworkTopologyStrategy', 'UCB-HEARST' : 2};

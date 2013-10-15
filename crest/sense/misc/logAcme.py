@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-TIMEOUT = 100
+TIMEOUT = 10  # seconds
 
 __author__ = 'chriswhsu'
 import httplib
@@ -8,23 +8,57 @@ import datetime
 import logging
 import uuid
 import sys
+import os
 from multiprocessing.pool import ThreadPool, TimeoutError
+from time import sleep
 
 import pytz
+from cassandra.cluster import Cluster, NoHostAvailable
 
-from cassandra.cluster import Cluster
+
+def restart():
+    print ('restarting program')
+    print (sys.argv)
+    python = sys.executable
+    os.execl(python, python, *sys.argv)
+    exit()
+
+
+print ('0.10')
+log = logging.getLogger()
+log.setLevel('INFO')
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+log.addHandler(handler)
+print ('0.20')
+#create utc datetime so we can remove time portion.
+utc = pytz.utc
+
+
+def get_connections():
+    keyspace = "sense"
+    conn = httplib.HTTPConnection("192.168.0.105", 8080)
+    cluster = Cluster(['128.32.189.230'], port=9042)
+    session = cluster.connect()
+    session.set_keyspace(keyspace)
+
+    prepared = session.prepare("""
+                            Insert into data (device_id, day, tp, actenergy, actpower, aparpower)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                            """)
+    log.info('finished get_connections')
+    return conn, cluster, session, prepared
 
 
 def main(argv):
     def get_json():
-
-        log.info('t-getting data with web request')
+        log.debug('t-getting data with web request')
         conn.request("GET", "/data/+")
         r = conn.getresponse()
         log.debug('t-got response: ' + str(r.status) + ' ' + r.reason)
         dat_str = r.read()
         results = json.loads(dat_str)
-        log.info('t-parsed into json.')
+        log.info('finished get_json.')
         return results
 
     def parse_write():
@@ -84,61 +118,73 @@ def main(argv):
 
                 # time.sleep(0.1)
                 # end while loop (1 sec / loop)
-        log.info("finished writing to DB")
+        log.info("finished parse_write")
+
+    log.info('STARTING in main')
 
     prefix = int(argv[0])
     insertcount = int(argv[1])
 
-    keyspace = "sense"
-
-    log = logging.getLogger()
-    log.setLevel('INFO')
-    handler = logging.StreamHandler()
-    handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
-    log.addHandler(handler)
-
-    conn = httplib.HTTPConnection("192.168.0.105", 8080)
-    cluster = Cluster(['128.32.189.230'], port=9042)
-    session = cluster.connect()
-
-    log.info("setting keyspace...")
-    session.set_keyspace(keyspace)
-
-    loop_count = 0
-
     pool = ThreadPool(processes=3)
 
-    prepared = session.prepare("""
-                            Insert into data (device_id, day, tp, actenergy, actpower, aparpower)
-                            VALUES (?, ?, ?, ?, ?, ?)
-                            """)
+    mycon = pool.apply_async(get_connections)
+    try:
+        conn, cluster, session, prepared = mycon.get(TIMEOUT)
+    except TimeoutError:
+        log.info('timeout creation connections.')
+        restart()
 
-    log.debug("created prepared statements")
-    #create utc datetime so we can remove time portion.
-    utc = pytz.utc
+    except NoHostAvailable:
+        sleep(10)
+        restart()
+
+    loop_count = 0
+    r_timeouts = 0
+    w_timeouts = 0
 
     while True:
+
+        success = False
+
+        # if we have 3 or more consecutive read or write timeouts
+        # then re-establish all connections.
+        if r_timeouts >= 3 or w_timeouts >= 3:
+            python = sys.executable
+            os.execl(python, python, *sys.argv)
+            exit()
         if loop_count == 0:
             read1 = pool.apply_async(get_json, ())
-
         try:
             reading = read1.get(timeout=TIMEOUT)
+            r_timeouts = 0
+            success = True
         except TimeoutError:
-            log.info("timeout reading, give up and continue.")
+            log.info("Read: TimeoutError, give up and continue.")
+            r_timeouts += 1
+        except httplib.CannotSendRequest:
+            log.info("Read: CannotSendRequest, sleep and continue.")
+            sleep(10)
+            r_timeouts += 1
+        except httplib.BadStatusLine:
+            log.info("Read: BadStatusLine, sleep and continue.")
+            sleep(10)
+            r_timeouts += 1
 
-        if loop_count == 0:
-            update_time = {m: 0 for m in reading['/costas_acmes']['Contents']}
+        if success:
 
-        write1 = pool.apply_async(parse_write, ())
-        read1 = pool.apply_async(get_json, ())
+            if loop_count == 0:
+                update_time = {m: 0 for m in reading['/costas_acmes']['Contents']}
 
-        try:
-            done_writing = write1.get(timeout=TIMEOUT)
-        except TimeoutError:
-            log.info("timeout writing, give up and continue.")
-        loop_count += 1
+            write1 = pool.apply_async(parse_write, ())
+            read1 = pool.apply_async(get_json, ())
 
-    conn.close()
+            try:
+                done_writing = write1.get(timeout=TIMEOUT)
+                w_timeouts = 0
+                loop_count += 1
+            except TimeoutError:
+                log.info("Write: TimeoutError, give up and continue.")
+                w_timeouts += 1
 
 
 if __name__ == "__main__":

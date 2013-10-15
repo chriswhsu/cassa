@@ -98,7 +98,7 @@ class TestSenseWorker(unittest.TestCase):
                         device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
         self.sns.register_device(device)
 
-        sleep(2) # need to sleep to prevent unordered updates.
+        sleep(3) # need to sleep to prevent unordered updates.
 
         device = Device(external_identifier='test123', name='testDevice10',
                         device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
