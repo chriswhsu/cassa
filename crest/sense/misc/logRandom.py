@@ -87,10 +87,6 @@ def main(argv):
         sleep(10)
         restart()
 
-    loop_count = 0
-    r_timeouts = 0
-    w_timeouts = 0
-
     while True:
 
         parse_write()
