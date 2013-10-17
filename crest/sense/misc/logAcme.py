@@ -107,7 +107,7 @@ def main(argv):
 
                     fullprefix = 10000000 * prefix
 
-                    for p in range(fullprefix, fullprefix + insertcount + 1):
+                    for p in range(fullprefix, fullprefix + insertcount):
                         dev_uuid = uuid.UUID(str(p) + '-0000-0000-0000-000000000' + i)
                         session.execute(prepared.bind((dev_uuid, utc_date, ts, energy, power, apparentpower)))
                         log.debug("executed prepared statements")
@@ -153,9 +153,9 @@ def main(argv):
             os.execl(python, python, *sys.argv)
             exit()
         if loop_count == 0:
-            read1 = pool.apply_async(get_json, ())
+            reader = pool.apply_async(get_json, ())
         try:
-            reading = read1.get(timeout=TIMEOUT)
+            reading = reader.get(timeout=TIMEOUT)
             r_timeouts = 0
             success = True
         except TimeoutError:
@@ -176,7 +176,7 @@ def main(argv):
                 update_time = {m: 0 for m in reading['/costas_acmes']['Contents']}
 
             write1 = pool.apply_async(parse_write, ())
-            read1 = pool.apply_async(get_json, ())
+            reader = pool.apply_async(get_json, ())
 
             try:
                 done_writing = write1.get(timeout=TIMEOUT)
