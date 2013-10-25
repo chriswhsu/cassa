@@ -1,8 +1,8 @@
 __author__ = 'chriswhsu'
 
-from crest.sense.senseworker import SenseWorker
+from crest.sense.cassandraworker import CassandraWorker
 
-sns = SenseWorker(test=False)
+sns = CassandraWorker(test=True)
 
 # sns.session.execute("""drop table if exists data""")
 # sns.log.info('dropped table data.')

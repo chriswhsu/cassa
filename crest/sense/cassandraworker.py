@@ -10,7 +10,7 @@ from cassandra.cluster import Cluster
 from crest.sense.device import Device
 
 
-class SenseWorker(object):
+class CassandraWorker(object):
     def __init__(self, test=True):
         config = ConfigParser.ConfigParser()
         config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sense.cnf'))

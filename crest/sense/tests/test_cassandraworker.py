@@ -1,4 +1,4 @@
-from crest.sense.sensefactory import build_worker, build_device
+from crest.sense.cassandraworker import Device, CassandraWorker
 
 __author__ = 'chriswhsu'
 
@@ -6,28 +6,10 @@ import unittest
 import uuid
 
 
-class TestDevice(unittest.TestCase):
-    def test_create_device(self):
-        import crest.sense.device
-
-        device = build_device(external_identifier='tdc', name="tdc_name", geohash='gcpp33',
-                              device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
-        # don't have a logger object so just print.
-        print(device)
-
-        self.assertTrue(isinstance(device, crest.sense.device.Device))
-
-    def test_prevent_inconsitant_geospatial(self):
-        # If we try to populat both geohash and lat / long we expect an exception.
-        with self.assertRaises(Exception): build_device(external_identifier='geo2', name='geohash2', geohash='gcpp',
-                                                        latitude=51,
-                                                        longitude=-0.14)
-
-
 class TestSenseWorker(unittest.TestCase):
-    # Create SenseWorker to maintain a single database connection throughout tests.
+    # Create CassandraWorker to maintain a single database connection throughout tests.
 
-    sns = build_worker()
+    sns = CassandraWorker()
 
     def tearDown(self):
         self.sns.log.info("tearDown: truncating devices table.")
@@ -35,13 +17,13 @@ class TestSenseWorker(unittest.TestCase):
 
     def test_device_creation(self):
         """Test for successful persisting of a new device."""
-        device = build_device(external_identifier='tdc', name="tdc_name",
+        device = Device(external_identifier='tdc', name="tdc_name",
                               device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
         self.sns.register_device(device)
 
     def test_single_external_id(self):
         """Test retrieval of device by external_identifier"""
-        device = build_device(external_identifier='testSingle', name='testDevice2',
+        device = Device(external_identifier='testSingle', name='testDevice2',
                               device_uuid=uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55'))
         self.sns.register_device(device)
         devices = self.sns.get_device_ids_by_external_id('testSingle')
@@ -49,18 +31,18 @@ class TestSenseWorker(unittest.TestCase):
 
     def test_novel_uuid_device_creation(self):
         """Test creating novel device without specified UUID"""
-        device = build_device(external_identifier='tdc', name="tdc_name")
+        device = Device(external_identifier='tdc', name="tdc_name")
         result = self.sns.register_device(device)
         self.assertTrue(isinstance(result, uuid.UUID))
 
     def test_string_uuid(self):
-        device = build_device(external_identifier='tdp', name="tdp_name",
+        device = Device(external_identifier='tdp', name="tdp_name",
                               device_uuid='117d661d-7e61-49ea-96a5-68c34e83db55')
         result = self.sns.register_device(device)
 
     def test_dupliate_name(self):
         """Test retrieval of device by name"""
-        device = build_device(external_identifier='testSingle', name='testDevice2',
+        device = Device(external_identifier='testSingle', name='testDevice2',
                               device_uuid=uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55'))
         self.sns.register_device(device)
         devices = self.sns.get_device_ids_by_name('testDevice2')
@@ -68,11 +50,11 @@ class TestSenseWorker(unittest.TestCase):
 
     def test_multiple_names(self):
         """Test creating multiple devices with same external_identifier and retrieving"""
-        device = build_device(external_identifier='test123', name='testDevice1',
+        device = Device(external_identifier='test123', name='testDevice1',
                               device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
         self.sns.register_device(device)
 
-        device = build_device(external_identifier='test1234', name='testDevice1',
+        device = Device(external_identifier='test1234', name='testDevice1',
                               device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'))
         self.sns.register_device(device)
 
@@ -81,11 +63,11 @@ class TestSenseWorker(unittest.TestCase):
                                    uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33')])
 
     def test_prevent_dup_external_id(self):
-        device = build_device(external_identifier='test123', name='testDevice1',
+        device = Device(external_identifier='test123', name='testDevice1',
                               device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
         self.sns.register_device(device)
 
-        device = build_device(external_identifier='test123', name='testDevice1',
+        device = Device(external_identifier='test123', name='testDevice1',
                               device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'))
 
         with self.assertRaises(Exception): self.sns.register_device(device)
@@ -95,11 +77,11 @@ class TestSenseWorker(unittest.TestCase):
     #    from time import sleep
     #
     #    """ Same external identifier allowed if device_uuid is the same."""
-    #    device = build_device(external_identifier='test123', name='testDevice1',
+    #    device = Device(external_identifier='test123', name='testDevice1',
     #                    device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
     #    self.sns.register_device(device)
     #
-    #    device = build_device(external_identifier='test123', name='welcome',
+    #    device = Device(external_identifier='test123', name='welcome',
     #                    device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
     #    updated = self.sns.register_device(device)
     #
@@ -111,12 +93,12 @@ class TestSenseWorker(unittest.TestCase):
         """Test retrieval by distance from geohash"""
 
         target_device = self.sns.register_device(
-            build_device(external_identifier='geo:1', name='geohash1', geohash='gcpvhep'))
-        self.sns.register_device(build_device(external_identifier='geo:2', name='geohash2', latitude=51.5177893638,
+            Device(external_identifier='geo:1', name='geohash1', geohash='gcpvhep'))
+        self.sns.register_device(Device(external_identifier='geo:2', name='geohash2', latitude=51.5177893638,
                                               longitude=-0.1417708396911))
-        self.sns.register_device(build_device(external_identifier='geo:3', name='geohash2', geohash='gcpvhfb'))
+        self.sns.register_device(Device(external_identifier='geo:3', name='geohash2', geohash='gcpvhfb'))
 
-        self.sns.register_device(build_device(external_identifier='geo:4', name='geohash2', geohash='gcpvhfr'))
+        self.sns.register_device(Device(external_identifier='geo:4', name='geohash2', geohash='gcpvhfr'))
 
         # There should be 3 points within 0.5 meters
         devices = self.sns.get_device_ids_by_geohash('gcpvhep', .5)
@@ -129,7 +111,7 @@ class TestSenseWorker(unittest.TestCase):
 
 
     def test_get_device(self):
-        device1 = build_device(external_identifier='tdc', name="tdc_name",
+        device1 = Device(external_identifier='tdc', name="tdc_name",
                                device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
         device1_id = self.sns.register_device(device1)
 

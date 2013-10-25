@@ -1,8 +1,8 @@
 __author__ = 'chriswhsu'
 
-from crest.sense.senseworker import SenseWorker
+from crest.sense.cassandraworker import CassandraWorker
 
-sns = SenseWorker(test=False)
+sns = CassandraWorker(test=True)
 
 # sns.session.execute("""drop table if exists devices""")
 # sns.log.info('dropped table devices.')
@@ -40,5 +40,5 @@ sns.log.info('created table devices.')
 # 1 Year --> 1,000 devices * 365 days * 8 geohash specificities = 3 million records.
 #           (compared to 90 billion data records)
 
-# nope, what if the device moves?  duh.  We may have index entries per time point.
+# nope, what if the device moves?  duh.  We end up with index entries per time point.
 
