@@ -11,7 +11,7 @@ from crest.sense.device import Device
 
 
 class SenseWorker(object):
-    def __init__(self, test=False):
+    def __init__(self, test=True):
         config = ConfigParser.ConfigParser()
         config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sense.cnf'))
 
@@ -54,6 +54,7 @@ class SenseWorker(object):
           (?, ?, ?, ?, ?, ?, ?, ?, ?)
          """)
 
+        prepared.consistency_level = 5
         self.session.execute(prepared.bind((
             device.device_uuid, device.geohash, device.name, device.external_identifier,
             device.measures,
@@ -67,7 +68,7 @@ class SenseWorker(object):
 
         query = ("SELECT * from devices where device_uuid = ?")
         prepared = self.session.prepare(query)
-
+        prepared.consistency_level = 5
         future = self.session.execute_async(prepared.bind([device_uuid]))
 
         rows = future.result()
@@ -96,7 +97,6 @@ class SenseWorker(object):
             self.log.exeception()
 
     def get_device_ids_by_name(self, name):
-
 
         try:
             query = "SELECT device_uuid from devices where name = ?"
@@ -136,7 +136,6 @@ class SenseWorker(object):
                    if haversine.haversine(point, geohash.decode(row.geohash)) <= meters]
         return devices
 
-
     def get_device_uuids_by_measures(self):
         """ Return device_uuids that are able to report certain measures."""
         # TODO implment method get_device_uuids_by_measures
@@ -149,12 +148,12 @@ class SenseWorker(object):
 
     def write_data(self, device_uuid, timepoint, list_of_kvp):
         # TODO figure out how to best create api for writing data.
-        prepared = session.prepare("""
+        prepared = self.session.prepare("""
                                     Insert into ddata (deviceID,day,timepoint,feeds,event)
                                     VALUES (?, ?, ?, ?, ?)
                                     """)
 
-        log.info("created prepared statements")
+        self.log.info("created prepared statements")
         #create utc datetime so we can remove time portion.
         utc = pytz.utc
         utc_datetime = datetime.datetime.fromtimestamp(ts, utc)
@@ -162,12 +161,14 @@ class SenseWorker(object):
 
         myValues = {'Power': Power, 'ApparentPower': ApparentPower, 'Energy': Energy}
 
-        session.execute(prepared.bind((ID, utc_date, ts, myValues, '')))
+        self.session.execute(prepared.bind((ID, utc_date, ts, myValues, '')))
         sleep(.5)
+
 
     def write_bulk_data(self, device_uuid, some_kind_of_an_array_of_kvps):
         # TODO figure out the best array structure
         pass
+
 
     def get_data_range(self, list_of_uuids, start_date, stop_date):
         rows = []
@@ -177,6 +178,7 @@ class SenseWorker(object):
                 new_rows = self.get_data(uuid, start_date + datetime.timedelta(days=x))
                 rows += new_rows
         return rows
+
 
     def get_data(self, uuid, utc_date):
         query = "SELECT actenergy, tp FROM data where device_uuid = ? and day = ?"

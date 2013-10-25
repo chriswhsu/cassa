@@ -21,10 +21,11 @@ class Device:
         """
 
 
-        #prevent inconsistant geospatial data from making it into repository
+        # prevent inconsistant geospatial data from making it into repository
         if geohash and (latitude or longitude):
             raise Exception("don't populate both geohash and lat / long")
 
+        # but populate both to facilitate queries that need lat/long data.
         if (latitude and longitude) and not geohash:
             geohash = gh.encode(latitude, longitude)
 
