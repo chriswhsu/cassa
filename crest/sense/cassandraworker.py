@@ -4,6 +4,7 @@ import logging
 import os
 import ConfigParser
 import datetime
+import pytz
 
 from cassandra.cluster import Cluster
 
@@ -11,6 +12,21 @@ from crest.sense.device import Device
 
 
 class CassandraWorker(object):
+    # a prepared statement to share across multiple writes
+    prepared_statements = dict()
+
+    def prepare_shared(self, prepared):
+
+        c_hash = hash(prepared)
+
+        if c_hash in self.prepared_statements:
+            pass
+        else:
+            self.prepared_statements[c_hash] = self.session.prepare(prepared)
+
+        return self.prepared_statements[c_hash]
+
+
     def __init__(self, test=True):
         config = ConfigParser.ConfigParser()
         config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sense.cnf'))
@@ -47,14 +63,14 @@ class CassandraWorker(object):
         if len(check) > 1:
             raise Exception("we should never have more than one, please resolve data issue.")
 
-        prepared = self.session.prepare("""
+        prepared = self.prepare_shared("""
           insert into devices (device_uuid, geohash, name, external_identifier, measures, tags, parent_device_id,
                                 latitude, longitude)
            values
           (?, ?, ?, ?, ?, ?, ?, ?, ?)
          """)
 
-        prepared.consistency_level = 5
+        prepared.consistency_level = 1
         self.session.execute(prepared.bind((
             device.device_uuid, device.geohash, device.name, device.external_identifier,
             device.measures,
@@ -67,8 +83,7 @@ class CassandraWorker(object):
     def get_device(self, device_uuid):
 
         query = ("SELECT * from devices where device_uuid = ?")
-        prepared = self.session.prepare(query)
-        prepared.consistency_level = 5
+        prepared = self.prepare_shared(query)
         future = self.session.execute_async(prepared.bind([device_uuid]))
 
         rows = future.result()
@@ -84,7 +99,7 @@ class CassandraWorker(object):
 
     def get_device_ids_by_external_id(self, external_identifier):
         query = ("SELECT device_uuid from devices where external_identifier = ?")
-        prepared = self.session.prepare(query)
+        prepared = self.prepare_shared(query)
 
         future = self.session.execute_async(prepared.bind([external_identifier]))
 
@@ -100,7 +115,7 @@ class CassandraWorker(object):
 
         try:
             query = "SELECT device_uuid from devices where name = ?"
-            prepared = self.session.prepare(query)
+            prepared = self.prepare_shared(query)
 
             future = self.session.execute_async(prepared.bind([name]))
             rows = future.result()
@@ -146,23 +161,30 @@ class CassandraWorker(object):
         # TODO implement method get_device_uuids_by_tags
         pass
 
-    def write_data(self, device_uuid, timepoint, list_of_kvp):
+    def write_data_prepared(self, device_uuid, timepoint, tuples):
         # TODO figure out how to best create api for writing data.
-        prepared = self.session.prepare("""
-                                    Insert into ddata (deviceID,day,timepoint,feeds,event)
-                                    VALUES (?, ?, ?, ?, ?)
-                                    """)
+        self.log.debug("before column wrangling")
 
-        self.log.info("created prepared statements")
+        columns = ''
+        col_q = ''
+        values = []
+        for x in tuples:
+            columns += ', ' + x[0]
+            col_q += ', ' + '?'
+            values.append(x[1])
+
+        prepared = self.prepare_shared(
+            " Insert into data (device_id, day, tp" + columns + " ) values ( ?, ?, ?" + col_q + ")")
+
         #create utc datetime so we can remove time portion.
+        self.log.debug("before pytz")
         utc = pytz.utc
-        utc_datetime = datetime.datetime.fromtimestamp(ts, utc)
+
+        utc_datetime = datetime.datetime.fromtimestamp(timepoint, utc)
         utc_date = utc_datetime.replace(hour=0, minute=0, second=0, microsecond=0)
-
-        myValues = {'Power': Power, 'ApparentPower': ApparentPower, 'Energy': Energy}
-
-        self.session.execute(prepared.bind((ID, utc_date, ts, myValues, '')))
-        sleep(.5)
+        self.log.debug("after time wrangling")
+        self.session.execute(prepared.bind((device_uuid, utc_date, timepoint) + tuple(values)))
+        self.log.debug("after write")
 
 
     def write_bulk_data(self, device_uuid, some_kind_of_an_array_of_kvps):

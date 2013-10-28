@@ -1,15 +1,16 @@
-from crest.sense.cassandraworker import Device, CassandraWorker
-
 __author__ = 'chriswhsu'
 
 import unittest
 import uuid
+import time
+
+from crest.sense.cassandraworker import Device, CassandraWorker
 
 
-class TestSenseWorker(unittest.TestCase):
+class TestCassandraWorker(unittest.TestCase):
     # Create CassandraWorker to maintain a single database connection throughout tests.
 
-    sns = CassandraWorker()
+    sns = CassandraWorker(test=True)
 
     def tearDown(self):
         self.sns.log.info("tearDown: truncating devices table.")
@@ -18,13 +19,13 @@ class TestSenseWorker(unittest.TestCase):
     def test_device_creation(self):
         """Test for successful persisting of a new device."""
         device = Device(external_identifier='tdc', name="tdc_name",
-                              device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
+                        device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
         self.sns.register_device(device)
 
     def test_single_external_id(self):
         """Test retrieval of device by external_identifier"""
         device = Device(external_identifier='testSingle', name='testDevice2',
-                              device_uuid=uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55'))
+                        device_uuid=uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55'))
         self.sns.register_device(device)
         devices = self.sns.get_device_ids_by_external_id('testSingle')
         self.assertEqual(devices, [uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55')])
@@ -37,13 +38,13 @@ class TestSenseWorker(unittest.TestCase):
 
     def test_string_uuid(self):
         device = Device(external_identifier='tdp', name="tdp_name",
-                              device_uuid='117d661d-7e61-49ea-96a5-68c34e83db55')
+                        device_uuid='117d661d-7e61-49ea-96a5-68c34e83db55')
         result = self.sns.register_device(device)
 
     def test_dupliate_name(self):
         """Test retrieval of device by name"""
         device = Device(external_identifier='testSingle', name='testDevice2',
-                              device_uuid=uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55'))
+                        device_uuid=uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55'))
         self.sns.register_device(device)
         devices = self.sns.get_device_ids_by_name('testDevice2')
         self.assertEqual(devices, [uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55')])
@@ -51,11 +52,11 @@ class TestSenseWorker(unittest.TestCase):
     def test_multiple_names(self):
         """Test creating multiple devices with same external_identifier and retrieving"""
         device = Device(external_identifier='test123', name='testDevice1',
-                              device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
+                        device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
         self.sns.register_device(device)
 
         device = Device(external_identifier='test1234', name='testDevice1',
-                              device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'))
+                        device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'))
         self.sns.register_device(device)
 
         devices = self.sns.get_device_ids_by_name('testDevice1')
@@ -64,11 +65,11 @@ class TestSenseWorker(unittest.TestCase):
 
     def test_prevent_dup_external_id(self):
         device = Device(external_identifier='test123', name='testDevice1',
-                              device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
+                        device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
         self.sns.register_device(device)
 
         device = Device(external_identifier='test123', name='testDevice1',
-                              device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'))
+                        device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'))
 
         with self.assertRaises(Exception): self.sns.register_device(device)
 
@@ -95,7 +96,7 @@ class TestSenseWorker(unittest.TestCase):
         target_device = self.sns.register_device(
             Device(external_identifier='geo:1', name='geohash1', geohash='gcpvhep'))
         self.sns.register_device(Device(external_identifier='geo:2', name='geohash2', latitude=51.5177893638,
-                                              longitude=-0.1417708396911))
+                                        longitude=-0.1417708396911))
         self.sns.register_device(Device(external_identifier='geo:3', name='geohash2', geohash='gcpvhfb'))
 
         self.sns.register_device(Device(external_identifier='geo:4', name='geohash2', geohash='gcpvhfr'))
@@ -112,7 +113,7 @@ class TestSenseWorker(unittest.TestCase):
 
     def test_get_device(self):
         device1 = Device(external_identifier='tdc', name="tdc_name",
-                               device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
+                         device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
         device1_id = self.sns.register_device(device1)
 
         device2 = self.sns.get_device(device1_id)
@@ -127,3 +128,37 @@ class TestSenseWorker(unittest.TestCase):
 
         #for row in rows:
         #    print row
+
+    def test_write_data_one_feed(self):
+        self.sns.log.info('start write.')
+        self.sns.write_data_prepared(device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'), timepoint=time.time(),
+                            tuples=(('temp', 35.6),))
+        self.sns.log.info('finish write.')
+        # just hoping to get this far without an exception
+        self.assertEquals(1, 1)
+
+    def test_write_data_multiple_feeds(self):
+        self.sns.log.info('start write.')
+        self.sns.write_data_prepared(uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'), time.time(),
+                            (('temp', 35.6), ('humidity', 99), ('solar_rad', 625), ('wind_dir', 23.5)))
+        self.sns.log.info('finish write.')
+        # just hoping to get this far without an exception
+        self.assertEquals(1, 1)
+
+    def test_write_data_100_record_feed(self):
+        self.sns.log.info('start big write.')
+        for x in range(1000):
+            self.sns.write_data_prepared(uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'), time.time(),
+                            (('temp', 35.6), ('humidity', 99), ('solar_rad', 625), ('wind_dir', 23.5)))
+        self.sns.log.info('finish big write.')
+        # just hoping to get this far without an exception
+        self.assertEquals(1, 1)
+
+
+    def test_write_data_invalid_feed(self):
+        import time
+
+        with self.assertRaises(Exception): self.sns.write_data_prepared(uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'),
+                                                               time.time(),
+                                                               (('baloney_price', 23.5),))
+
