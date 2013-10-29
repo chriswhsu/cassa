@@ -38,7 +38,7 @@ utc = pytz.utc
 def get_connections():
     keyspace = "sense"
     conn = httplib.HTTPConnection("192.168.0.105", 8080)
-    cluster = Cluster(['128.32.189.230'], port=9042)
+    cluster = Cluster(['128.32.189.228','128.32.189.229','128.32.189.230'], port=9042)
     session = cluster.connect()
     session.set_keyspace(keyspace)
 
