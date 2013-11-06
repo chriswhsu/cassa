@@ -12,9 +12,11 @@ from crest.sense.device import Device
 
 
 class CassandraWorker(object):
+
     # a prepared statement to share across multiple writes
     prepared_statements = dict()
 
+    # share prepared statments transparently by calling this instead of session.prepare.
     def prepare_shared(self, prepared):
 
         c_hash = hash(prepared)
@@ -161,7 +163,7 @@ class CassandraWorker(object):
         # TODO implement method get_device_uuids_by_tags
         pass
 
-    def write_data_prepared(self, device_uuid, timepoint, tuples):
+    def write_data(self, device_uuid, timepoint, tuples):
         # TODO figure out how to best create api for writing data.
         self.log.debug("before column wrangling")
 
@@ -195,6 +197,7 @@ class CassandraWorker(object):
     def get_data_range(self, list_of_uuids, start_date, stop_date):
         rows = []
         days = (stop_date + datetime.timedelta(days=1) - start_date).days
+        # TODO refactor to use parallel threads for multiple day retrieval.
         for uuid in list_of_uuids:
             for x in range(days):
                 new_rows = self.get_data(uuid, start_date + datetime.timedelta(days=x))

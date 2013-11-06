@@ -183,6 +183,8 @@ def main(argv):
                 log.info("Write: TimeoutError, give up and continue.")
                 w_timeouts += 1
 
+            sleep(.5)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
