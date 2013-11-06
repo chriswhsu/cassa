@@ -18,9 +18,7 @@ from cassandra.cluster import Cluster, NoHostAvailable
 
 def restart():
     print ('restarting program')
-    print (sys.argv)
-    python = sys.executable
-    os.execl(python, python, *sys.argv)
+    # just exit because Supervisor now handles restarting.
     exit()
 
 
@@ -135,6 +133,7 @@ def main(argv):
         restart()
 
     except NoHostAvailable:
+        log.info('no host available.')
         sleep(10)
         restart()
 
@@ -149,9 +148,7 @@ def main(argv):
         # if we have 3 or more consecutive read or write timeouts
         # then re-establish all connections.
         if r_timeouts >= 3 or w_timeouts >= 3:
-            python = sys.executable
-            os.execl(python, python, *sys.argv)
-            exit()
+            restart()
         if loop_count == 0:
             reader = pool.apply_async(get_json, ())
         try:
