@@ -2,6 +2,7 @@ __author__ = 'chriswhsu'
 
 import unittest
 import uuid
+import time
 
 from crest.sense.sensefactory import build_worker, build_device
 
@@ -128,7 +129,6 @@ class TestSenseFactory(unittest.TestCase):
         self.assertEqual(len(devices), 1)
         self.assertEqual(devices, [target_device])
 
-
     def test_get_device(self):
         device1 = build_device(external_identifier='tdc', name="tdc_name",
                                device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
@@ -146,3 +146,36 @@ class TestSenseFactory(unittest.TestCase):
 
         #for row in rows:
         #    print row
+
+    def test_write_data_one_feed(self):
+        self.sns.log.info('start write.')
+        self.sns.write_data(device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'), timepoint=time.time(),
+                            tuples=(('temp', 35.6),))
+        self.sns.log.info('finish write.')
+        # just hoping to get this far without an exception
+        self.assertEquals(1, 1)
+
+    def test_write_data_multiple_feeds(self):
+        self.sns.log.info('start write.')
+        self.sns.write_data(uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'), time.time(),
+                            (('temp', 35.6), ('humidity', 99), ('solar_rad', 625), ('wind_dir', 23.5)))
+        self.sns.log.info('finish write.')
+        # just hoping to get this far without an exception
+        self.assertEquals(1, 1)
+
+    def test_write_data_100_record_feed(self):
+        self.sns.log.info('start big write.')
+        for x in range(100):
+            self.sns.write_data(uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'), time.time(),
+                            (('temp', 35.6), ('humidity', 99), ('solar_rad', 625), ('wind_dir', 23.5)))
+        self.sns.log.info('finish big write.')
+        # just hoping to get this far without an exception
+        self.assertEquals(1, 1)
+
+    def test_write_data_invalid_feed(self):
+        import time
+
+        with self.assertRaises(Exception): self.sns.write_data(uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'),
+                                                               time.time(),
+                                                               (('baloney_price', 23.5),))
+

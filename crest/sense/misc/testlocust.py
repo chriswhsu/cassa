@@ -2,7 +2,7 @@ import sys
 sys.path.append("/Users/chriswhsu/PycharmProjects/cassa")
 from locust import Locust, TaskSet, task, events
 from crest.sense.device import Device
-from crest.sense import senseworker
+from crest.sense import cassandraworker
 import time
 import uuid
 
@@ -20,7 +20,7 @@ class UserBehavior(TaskSet):
         device = Device(external_identifier=str(time.time()), name="tdc_name",
                         device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44'))
 
-        sns = senseworker.SenseWorker(test=True)
+        sns = cassandraworker.CassandraWorker(test=True)
         sns.register_device(device)
         events.request_success.fire("MethodA","NameA",10,100)
 

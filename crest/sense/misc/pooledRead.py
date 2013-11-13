@@ -18,7 +18,7 @@ from dateutil import rrule
 
 
 log = logging.getLogger()
-log.setLevel('INFO')
+log.setLevel('DEBUG')
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
 log.addHandler(handler)
@@ -44,22 +44,21 @@ def main():
 
     utc = pytz.utc
 
-    utc_date_start = datetime.datetime(2013, 10, 14, 0, 0, 0, 0, utc)
+    utc_date_start = datetime.datetime(2013, 11, 5, 0, 0, 0, 0, utc)
 
-    utc_date_end = datetime.datetime(2013, 10, 14, 0, 0, 0, 0, utc)
+    utc_date_end = datetime.datetime(2013, 11, 8, 0, 0, 0, 0, utc)
 
-    mylist = {'10000000-0000-0000-0000-00000000094e', '10000001-0000-0000-0000-0000000008b8',
-              '10000002-0000-0000-0000-0000000008b9', '10000003-0000-0000-0000-0000000008ba',
-              '10000004-0000-0000-0000-0000000008d4', '10000005-0000-0000-0000-0000000008d8',
-              '10000006-0000-0000-0000-0000000008e3', '10000007-0000-0000-0000-0000000008e4',
-              '10000008-0000-0000-0000-0000000008e5', '10000009-0000-0000-0000-0000000008e6'}
+    #mylist = {'10000000-0000-0000-0000-0000000008b8'}
+
+
+    mylist = {'10000000-0000-0000-0000-0000000008b8'}
 
     session = cluster.connect()
 
     log.info("setting keyspace...")
     session.set_keyspace(KEYSPACE)
 
-    query = ("SELECT actpower FROM data where device_id = ? and day in (?)")
+    query = ("SELECT tp, actpower FROM data where device_id = ? and day in (?)")
     prepared = session.prepare(query)
     pool = ThreadPool(processes=THREADS)
     r = []
@@ -74,12 +73,12 @@ def main():
     log.info("done spawning threads")
 
     for t in r:
-        log.info("Got a response")
         results += t.get(timeout=5000)
-
+        log.info("Got a response")
         log.info('We have %s rows' % len(results))
 
     if results:
+
         power = [row.actpower for row in results]
 
         log.info("Min Power: %d" % numpy.min(power))

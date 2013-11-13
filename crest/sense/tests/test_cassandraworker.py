@@ -15,6 +15,7 @@ class TestCassandraWorker(unittest.TestCase):
     def tearDown(self):
         self.sns.log.info("tearDown: truncating devices table.")
         self.sns.session.execute('truncate devices')
+        self.sns.registered_uuids = []
 
     def test_device_creation(self):
         """Test for successful persisting of a new device."""
@@ -129,36 +130,61 @@ class TestCassandraWorker(unittest.TestCase):
         #for row in rows:
         #    print row
 
-    def test_write_data_one_feed(self):
+    def test_get_nonexistent_device(self):
+        device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44')
+
+        device2 = self.sns.get_device(device_uuid)
+
+        #rows = sns.getdatarange(devices, datetime.datetime(2013, 9, 27, 0, 0, 0, 0), datetime.datetime(2013, 9, 27, 0, 0, 0, 0))
+
+        #for row in rows:
+        #    print row
+
+    def test_ensure_device_registered(self):
         self.sns.log.info('start write.')
-        self.sns.write_data_prepared(device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'), timepoint=time.time(),
+        with self.assertRaises(Exception): self.sns.write_data(
+            device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'), timepoint=time.time(),
+            tuples=(('temp', 35.6),))
+
+        self.sns.log.info('finish write.')
+
+    def test_write_data_one_feed(self):
+        device = Device(external_identifier='twdof', name="twdof_name",
+                        device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'))
+        self.sns.register_device(device)
+        self.sns.log.info('start write.')
+        self.sns.write_data(device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'), timepoint=time.time(),
                             tuples=(('temp', 35.6),))
         self.sns.log.info('finish write.')
         # just hoping to get this far without an exception
         self.assertEquals(1, 1)
 
     def test_write_data_multiple_feeds(self):
+        device = Device(external_identifier='twdof', name="twdof_name",
+                        device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'))
+        self.sns.register_device(device)
         self.sns.log.info('start write.')
-        self.sns.write_data_prepared(uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'), time.time(),
+        self.sns.write_data(uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'), time.time(),
                             (('temp', 35.6), ('humidity', 99), ('solar_rad', 625), ('wind_dir', 23.5)))
         self.sns.log.info('finish write.')
         # just hoping to get this far without an exception
         self.assertEquals(1, 1)
 
     def test_write_data_100_record_feed(self):
+        device = Device(external_identifier='twdof', name="twdof_name",
+                        device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'))
+        self.sns.register_device(device)
         self.sns.log.info('start big write.')
-        for x in range(1000):
-            self.sns.write_data_prepared(uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'), time.time(),
-                            (('temp', 35.6), ('humidity', 99), ('solar_rad', 625), ('wind_dir', 23.5)))
+        for x in range(100):
+            self.sns.write_data(uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'), time.time(),
+                                (('temp', 35.6), ('humidity', 99), ('solar_rad', 625), ('wind_dir', 23.5)))
         self.sns.log.info('finish big write.')
         # just hoping to get this far without an exception
         self.assertEquals(1, 1)
 
-
     def test_write_data_invalid_feed(self):
         import time
 
-        with self.assertRaises(Exception): self.sns.write_data_prepared(uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'),
+        with self.assertRaises(Exception): self.sns.write_data(uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'),
                                                                time.time(),
                                                                (('baloney_price', 23.5),))
-

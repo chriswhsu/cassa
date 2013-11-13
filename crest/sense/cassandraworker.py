@@ -12,9 +12,9 @@ from crest.sense.device import Device
 
 
 class CassandraWorker(object):
-
     # a prepared statement to share across multiple writes
     prepared_statements = dict()
+    registered_uuids = []
 
     # share prepared statments transparently by calling this instead of session.prepare.
     def prepare_shared(self, prepared):
@@ -89,8 +89,10 @@ class CassandraWorker(object):
         future = self.session.execute_async(prepared.bind([device_uuid]))
 
         rows = future.result()
-        self.log.info('We got %s rows' % len(rows))
 
+        if len(rows) == 0:
+            return None
+        self.log.info('We got %s rows' % len(rows))
         device = Device(external_identifier=rows[0].external_identifier, name=rows[0].name,
                         device_uuid=rows[0].device_uuid, geohash=rows[0].geohash, measures=rows[0].measures,
                         tags=rows[0].tags, parent_device_id=rows[0].parent_device_id, latitude=rows[0].latitude,
@@ -167,6 +169,18 @@ class CassandraWorker(object):
         # TODO figure out how to best create api for writing data.
         self.log.debug("before column wrangling")
 
+        # check in cache of registerd uuids
+        if device_uuid in self.registered_uuids:
+            pass;
+        else:
+            # if not there, check the database
+            device = self.get_device(device_uuid)
+            if device is None:
+                raise Exception("This device: %s does not exist, please register before writing data." % device_uuid)
+            else:
+                # it was there in DB, add to cache.
+                self.registered_uuids.append(device.device_uuid)
+
         columns = ''
         col_q = ''
         values = []
@@ -206,6 +220,11 @@ class CassandraWorker(object):
 
 
     def get_data(self, uuid, utc_date):
+
+        device = self.get_device(uuid)
+
+        self.log.info(device.measures)
+
         query = "SELECT actenergy, tp FROM data where device_uuid = ? and day = ?"
 
         try:
