@@ -28,7 +28,6 @@ class CassandraWorker(object):
 
         return self.prepared_statements[c_hash]
 
-
     def __init__(self, test=True):
         config = ConfigParser.ConfigParser()
         config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sense.cnf'))
@@ -84,7 +83,7 @@ class CassandraWorker(object):
 
     def get_device(self, device_uuid):
 
-        query = ("SELECT * from devices where device_uuid = ?")
+        query = "SELECT * from devices where device_uuid = ?"
         prepared = self.prepare_shared(query)
         future = self.session.execute_async(prepared.bind([device_uuid]))
 
@@ -100,9 +99,8 @@ class CassandraWorker(object):
 
         return device
 
-
     def get_device_ids_by_external_id(self, external_identifier):
-        query = ("SELECT device_uuid from devices where external_identifier = ?")
+        query = "SELECT device_uuid from devices where external_identifier = ?"
         prepared = self.prepare_shared(query)
 
         future = self.session.execute_async(prepared.bind([external_identifier]))
@@ -146,8 +144,6 @@ class CassandraWorker(object):
             raise
         point = geohash.decode(geohash_value)
 
-
-
         # create list of devices whose distance is less than <meters> from geohash_value.
         # first decode geohash to lat / long
         # than calculated haversine distance between that point and target
@@ -171,7 +167,7 @@ class CassandraWorker(object):
 
         # check in cache of registerd uuids
         if device_uuid in self.registered_uuids:
-            pass;
+            pass
         else:
             # if not there, check the database
             device = self.get_device(device_uuid)
@@ -202,11 +198,9 @@ class CassandraWorker(object):
         self.session.execute(prepared.bind((device_uuid, utc_date, timepoint) + tuple(values)))
         self.log.debug("after write")
 
-
     def write_bulk_data(self, device_uuid, some_kind_of_an_array_of_kvps):
         # TODO figure out the best array structure
         pass
-
 
     def get_data_range(self, list_of_uuids, start_date, stop_date):
         rows = []
@@ -214,18 +208,21 @@ class CassandraWorker(object):
         # TODO refactor to use parallel threads for multiple day retrieval.
         for uuid in list_of_uuids:
             for x in range(days):
-                new_rows = self.get_data(uuid, start_date + datetime.timedelta(days=x))
+                new_rows = self.read_data(uuid, start_date + datetime.timedelta(days=x))
                 rows += new_rows
         return rows
 
+    def read_data(self, uuid, utc_date):
 
-    def get_data(self, uuid, utc_date):
-
+        # get device details
         device = self.get_device(uuid)
 
-        self.log.info(device.measures)
+        # create string of data types this device should contain
+        columns = ''
+        for x in device.measures:
+            columns += x + ', '
 
-        query = "SELECT actenergy, tp FROM data where device_uuid = ? and day = ?"
+        query = "SELECT " + columns + "tp FROM data where device_id = ? and day = ?"
 
         try:
             prepared = self.session.prepare(query)

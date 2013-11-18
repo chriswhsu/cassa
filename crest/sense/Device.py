@@ -50,4 +50,4 @@ class Device:
 
     def __str__(self):
         return 'device_uuid: ' + str(
-            self.device_uuid) + ', name: ' + self.name + ', externa_identifier: ' + self.external_identifier
+            self.device_uuid) + ', name: ' + self.name + ', external_identifier: ' + self.external_identifier

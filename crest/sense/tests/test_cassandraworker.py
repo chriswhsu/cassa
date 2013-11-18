@@ -16,6 +16,12 @@ class TestCassandraWorker(unittest.TestCase):
         self.sns.log.info("tearDown: truncating devices table.")
         self.sns.session.execute('truncate devices')
         self.sns.registered_uuids = []
+        self.sns.log.info("tearDown: DONE truncating devices table.")
+
+        self.sns.log.info("tearDown: truncating data table.")
+        self.sns.session.execute('truncate data')
+        self.sns.registered_uuids = []
+        self.sns.log.info("tearDown: DONE truncating data table.")
 
     def test_device_creation(self):
         """Test for successful persisting of a new device."""
@@ -74,22 +80,20 @@ class TestCassandraWorker(unittest.TestCase):
 
         with self.assertRaises(Exception): self.sns.register_device(device)
 
-    # Not working due to either driver issue or lack of undertanding of consistency levels.
-    #def test_allow_same_device_id(self):
-    #    from time import sleep
-    #
-    #    """ Same external identifier allowed if device_uuid is the same."""
-    #    device = Device(external_identifier='test123', name='testDevice1',
-    #                    device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
-    #    self.sns.register_device(device)
-    #
-    #    device = Device(external_identifier='test123', name='welcome',
-    #                    device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
-    #    updated = self.sns.register_device(device)
-    #
-    #    updated_device = self.sns.get_device(updated)
-    #
-    #    self.assertEqual(updated_device.name, 'welcome')
+    def test_allow_same_device_id(self):
+
+        """ Same external identifier allowed if device_uuid is the same."""
+        device = Device(external_identifier='test123', name='testDevice1',
+                        device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
+        self.sns.register_device(device)
+
+        device = Device(external_identifier='test123', name='welcome',
+                        device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
+        updated = self.sns.register_device(device)
+
+        updated_device = self.sns.get_device(updated)
+
+        self.assertEqual(updated_device.name, 'welcome')
 
     def test_geohash(self):
         """Test retrieval by distance from geohash"""
@@ -131,7 +135,7 @@ class TestCassandraWorker(unittest.TestCase):
         #    print row
 
     def test_get_nonexistent_device(self):
-        device_uuid=uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44')
+        device_uuid = uuid.UUID('e17d661d-7e61-49ea-96a5-68c34e83db44')
 
         device2 = self.sns.get_device(device_uuid)
 
@@ -185,6 +189,30 @@ class TestCassandraWorker(unittest.TestCase):
     def test_write_data_invalid_feed(self):
         import time
 
+        device = Device(external_identifier='twdof', name="twdof_name",
+                        device_uuid=uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'))
+        self.sns.register_device(device)
         with self.assertRaises(Exception): self.sns.write_data(uuid.UUID('a17d661d-7e61-49ea-96a5-68c34e83db33'),
                                                                time.time(),
                                                                (('baloney_price', 23.5),))
+
+    def test_read_data(self):
+        from crest.sense.utility import date_today
+
+        device = Device(external_identifier='tgd', name="tgd_name",
+                        measures=['temp', 'humidity', 'solar_rad', 'wind_dir'],
+                        device_uuid=uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db33'))
+        d_uuid = self.sns.register_device(device)
+        self.sns.log.info('start write.')
+
+        for x in range(10):
+            ts = time.time()
+            self.sns.write_data(uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db33'), time.time(),
+                                (('temp', 35.6), ('humidity', 99), ('solar_rad', 625), ('wind_dir', 23.5)))
+
+        rows = self.sns.read_data(d_uuid, date_today())
+
+        for row in rows:
+            self.sns.log.info(row)
+
+        self.assertEquals(len(rows), 10)
