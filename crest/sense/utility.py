@@ -6,7 +6,7 @@ import datetime
 import pytz
 
 
-def date_today():
+def gmt_date():
     ts = time.time()
     utc = pytz.utc
     utc_datetime = datetime.datetime.fromtimestamp(ts, utc)

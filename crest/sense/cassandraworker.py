@@ -19,18 +19,23 @@ class CassandraWorker(object):
     # share prepared statments transparently by calling this instead of session.prepare.
     def prepare_shared(self, prepared):
 
-        c_hash = hash(prepared)
+        cql_hash = hash(prepared)
 
-        if c_hash in self.prepared_statements:
+        if cql_hash in self.prepared_statements:
             pass
         else:
-            self.prepared_statements[c_hash] = self.session.prepare(prepared)
+            self.prepared_statements[cql_hash] = self.session.prepare(prepared)
 
-        return self.prepared_statements[c_hash]
+        return self.prepared_statements[cql_hash]
 
-    def __init__(self, test=True):
+    def __init__(self, my_cluster=None, my_port=None, my_keyspace=None, test=True):
         config = ConfigParser.ConfigParser()
         config.read(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'sense.cnf'))
+
+        if my_cluster is None:
+            my_cluster = config.get("Cassandra", "Cluster")
+        if my_port is None:
+            my_port = config.getint("Cassandra", "Port")
 
         self.log = logging.getLogger()
         self.log.setLevel(config.get("Logging", "Level"))
@@ -38,17 +43,22 @@ class CassandraWorker(object):
         self.handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
         self.log.addHandler(self.handler)
 
-        self.cluster = Cluster([config.get("Cassandra", "Cluster")], port=config.getint("Cassandra", "Port"))
+        self.cluster = Cluster([my_cluster], port=my_port)
         self.session = self.cluster.connect()
 
-        if test:
-            config_get = config.get("Cassandra", "TestKeyspace")
-            self.log.info("setting keyspace to %s" % config_get)
-            self.session.set_keyspace(config_get)
+        if my_keyspace is None:
+            if test:
+                keyspace = config.get("Cassandra", "TestKeyspace")
+                self.log.info("setting keyspace to %s" % keyspace)
+                self.session.set_keyspace(keyspace)
+            else:
+                keyspace = config.get("Cassandra", "Keyspace")
+                self.log.info("setting keyspace to %s" % keyspace)
+                self.session.set_keyspace(keyspace)
         else:
-            config_get = config.get("Cassandra", "Keyspace")
-            self.log.info("setting keyspace to %s" % config_get)
-            self.session.set_keyspace(config_get)
+            self.log.info("setting keyspace to %s" % my_keyspace)
+            self.session.set_keyspace(my_keyspace)
+
 
     def register_device(self, device):
 
@@ -81,8 +91,26 @@ class CassandraWorker(object):
             device.longitude)))
         return device.device_uuid
 
+    def get_all_devices(self):
+        query = "SELECT * from devices"
+        rows = self.session.execute(query)
+
+        if len(rows) == 0:
+            return None
+        self.log.debug('We got %s rows' % len(rows))
+        devices = []
+        for row in rows:
+            devices.append(Device(external_identifier=row.external_identifier, name=row.name,
+                                  device_uuid=row.device_uuid, geohash=row.geohash, measures=row.measures,
+                                  tags=row.tags, parent_device_id=row.parent_device_id, latitude=row.latitude,
+                                  longitude=row.longitude))
+
+        return devices
+
+
     def get_device(self, device_uuid):
 
+        # should only return a single row.
         query = "SELECT * from devices where device_uuid = ?"
         prepared = self.prepare_shared(query)
         future = self.session.execute_async(prepared.bind([device_uuid]))

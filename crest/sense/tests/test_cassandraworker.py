@@ -197,7 +197,7 @@ class TestCassandraWorker(unittest.TestCase):
                                                                (('baloney_price', 23.5),))
 
     def test_read_data(self):
-        from crest.sense.utility import date_today
+        from crest.sense.utility import gmt_date
 
         device = Device(external_identifier='tgd', name="tgd_name",
                         measures=['temp', 'humidity', 'solar_rad', 'wind_dir'],
@@ -210,7 +210,7 @@ class TestCassandraWorker(unittest.TestCase):
             self.sns.write_data(uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db33'), time.time(),
                                 (('temp', 35.6), ('humidity', 99), ('solar_rad', 625), ('wind_dir', 23.5)))
 
-        rows = self.sns.read_data(d_uuid, date_today())
+        rows = self.sns.read_data(d_uuid, gmt_date())
 
         for row in rows:
             self.sns.log.info(row)

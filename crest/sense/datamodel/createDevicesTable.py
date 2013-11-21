@@ -12,7 +12,7 @@ log.addHandler(handler)
 cluster = Cluster(['128.32.189.228','128.32.189.229','128.32.189.230'])
 session = cluster.connect()
 
-session.execute("""use test;""")
+session.execute("""use sense;""")
 #session.execute("""drop table test.devices;""")
 log.info('dropped table devices.')
 
@@ -28,12 +28,12 @@ session.execute("""CREATE TABLE devices (
                          tags map<text, text>,
                          PRIMARY KEY (device_uuid)
                        ) WITH
-                         compression={'sstable_compression': 'SnappyCompressor'} USING CONSISTENCY ALL;""")
+                         compression={'sstable_compression': 'SnappyCompressor'};""")
 
-session.execute("""CREATE INDEX external_id_ind ON devices (external_identifier) USING CONSISTENCY ALL;""")
+session.execute("""CREATE INDEX external_id_ind ON devices (external_identifier);""")
 
-session.execute("""CREATE INDEX name_ind ON devices (name) USING CONSISTENCY ALL;""")
+session.execute("""CREATE INDEX name_ind ON devices (name);""")
 
-session.execute("""CREATE INDEX geohash_ind ON devices (geohash) USING CONSISTENCY ALL;""")
+session.execute("""CREATE INDEX geohash_ind ON devices (geohash);""")
 
-session.execute("""CREATE INDEX parent_device_id_ind ON devices (parent_device_id) USING CONSISTENCY ALL;""")
+session.execute("""CREATE INDEX parent_device_id_ind ON devices (parent_device_id);""")
