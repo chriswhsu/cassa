@@ -15,13 +15,6 @@ from time import sleep
 import pytz
 from cassandra.cluster import Cluster, NoHostAvailable
 
-
-def restart():
-    print ('restarting program')
-    # just exit because Supervisor now handles restarting.
-    exit()
-
-
 print ('0.10')
 log = logging.getLogger()
 log.setLevel('INFO')
@@ -130,12 +123,12 @@ def main(argv):
         conn, cluster, session, prepared = mycon.get(TIMEOUT)
     except TimeoutError:
         log.info('timeout creation connections.')
-        restart()
+        raise
 
     except NoHostAvailable:
         log.info('no host available.')
         sleep(10)
-        restart()
+        raise
 
     loop_count = 0
     r_timeouts = 0
@@ -148,7 +141,7 @@ def main(argv):
         # if we have 3 or more consecutive read or write timeouts
         # then re-establish all connections.
         if r_timeouts >= 3 or w_timeouts >= 3:
-            restart()
+            raise TimeoutError
         if loop_count == 0:
             reader = pool.apply_async(get_json, ())
         try:
