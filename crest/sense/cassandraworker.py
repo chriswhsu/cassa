@@ -63,8 +63,11 @@ class CassandraWorker(object):
     def register_device(self, device):
 
         # enforce external_id uniqueness across entire device table.
+        self.log.debug('start check for unique external_identifier')
+
         check = self.session.execute("select * from devices where external_identifier = %s",
                                      parameters=[device.external_identifier])
+        self.log.debug('done with database hit')
         if len(check) == 1:
             if device.device_uuid == check[0].device_uuid:
                 pass
@@ -74,13 +77,15 @@ class CassandraWorker(object):
         if len(check) > 1:
             raise Exception("we should never have more than one, please resolve data issue.")
 
+        self.log.debug('prepare statement')
+
         prepared = self.prepare_shared("""
           insert into devices (device_uuid, geohash, name, external_identifier, measures, tags, parent_device_id,
                                 latitude, longitude)
            values
           (?, ?, ?, ?, ?, ?, ?, ?, ?)
          """)
-
+        self.log.debug('execute prepared')
         prepared.consistency_level = 1
         self.session.execute(prepared.bind((
             device.device_uuid, device.geohash, device.name, device.external_identifier,
@@ -89,6 +94,7 @@ class CassandraWorker(object):
             device.parent_device_id,
             device.latitude,
             device.longitude)))
+        self.log.debug('done with registering device')
         return device.device_uuid
 
 
@@ -157,14 +163,20 @@ class CassandraWorker(object):
         if len(rows) == 0:
             return None
         self.log.info('We got %s rows' % len(rows))
+        # sets returned as sorted list, not simple list
+        if rows[0].measures:
+            measures_ = [x for x in rows[0].measures]
+        else:
+            measures_ = None
+
         device = Device(external_identifier=rows[0].external_identifier, name=rows[0].name,
-                        device_uuid=rows[0].device_uuid, geohash=rows[0].geohash, measures=rows[0].measures,
+                        device_uuid=rows[0].device_uuid, geohash=rows[0].geohash, measures=measures_,
                         tags=rows[0].tags, parent_device_id=rows[0].parent_device_id, latitude=rows[0].latitude,
                         longitude=rows[0].longitude)
 
         return device
 
-    def get_device_ids_by_external_id(self, external_identifier):
+    def get_device_id_by_external_id(self, external_identifier):
         query = "SELECT device_uuid from devices where external_identifier = ?"
         prepared = self.prepare_shared(query)
 
@@ -173,8 +185,8 @@ class CassandraWorker(object):
         try:
             rows = future.result()
             self.log.info('We got %s rows' % len(rows))
-            devices = [row.device_uuid for row in rows]
-            return devices
+            return rows[0].device_uuid
+
         except Exception:
             self.log.exeception()
 
@@ -216,10 +228,21 @@ class CassandraWorker(object):
                    if haversine.haversine(point, geohash.decode(row.geohash)) <= meters]
         return devices
 
-    def get_device_uuids_by_measures(self):
+    def get_device_uuids_by_measure(self, measure):
         """ Return device_uuids that are able to report certain measures."""
-        # TODO implment method get_device_uuids_by_measures
-        pass
+        #
+        # Probably fast enough to simply iterate through all devices measures.
+        # took 300 ms for 1,000 devices.
+        devices = self.get_all_devices()
+
+        match_dev = []
+
+        for dev in devices:
+            if(dev.measures):
+                if measure in dev.measures:
+                    match_dev.append(dev.device_uuid)
+
+        return match_dev
 
     def get_device_uuids_by_tags(self):
         """ Return device_uuids that contain specific tags."""

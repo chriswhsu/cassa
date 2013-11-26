@@ -46,7 +46,7 @@ class TestSenseFactory(unittest.TestCase):
         device = build_device(external_identifier='testSingle', name='testDevice2',
                               device_uuid=uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55'))
         self.sns.register_device(device)
-        devices = self.sns.get_device_ids_by_external_id('testSingle')
+        devices = self.sns.get_device_id_by_external_id('testSingle')
         self.assertEqual(devices, [uuid.UUID('c17d661d-7e61-49ea-96a5-68c34e83db55')])
 
     def test_novel_uuid_device_creation(self):
