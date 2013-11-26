@@ -9,6 +9,7 @@ import pytz
 from cassandra.cluster import Cluster
 
 from crest.sense.device import Device
+from crest.sense.measure import Measure
 
 
 class CassandraWorker(object):
@@ -59,6 +60,26 @@ class CassandraWorker(object):
             self.log.info("setting keyspace to %s" % my_keyspace)
             self.session.set_keyspace(my_keyspace)
 
+    def register_measure(self, measure):
+        self.log.debug('prepare statement')
+
+        prepared = self.prepare_shared("""
+          insert into measures (name, description, uom, datatype)
+           values
+          (?, ?, ?, ?)
+         """)
+        self.log.debug('execute prepared')
+
+        self.session.execute(prepared.bind((
+            measure.name, measure.description, measure.uom, measure.datatype)))
+        self.log.debug('done with registering device')
+        pass
+
+    def get_all_measures(self):
+        # get all unit of measures.
+        pass
+
+
 
     def register_device(self, device):
 
@@ -86,7 +107,7 @@ class CassandraWorker(object):
           (?, ?, ?, ?, ?, ?, ?, ?, ?)
          """)
         self.log.debug('execute prepared')
-        prepared.consistency_level = 1
+
         self.session.execute(prepared.bind((
             device.device_uuid, device.geohash, device.name, device.external_identifier,
             device.measures,
@@ -164,13 +185,9 @@ class CassandraWorker(object):
             return None
         self.log.info('We got %s rows' % len(rows))
         # sets returned as sorted list, not simple list
-        if rows[0].measures:
-            measures_ = [x for x in rows[0].measures]
-        else:
-            measures_ = None
 
         device = Device(external_identifier=rows[0].external_identifier, name=rows[0].name,
-                        device_uuid=rows[0].device_uuid, geohash=rows[0].geohash, measures=measures_,
+                        device_uuid=rows[0].device_uuid, geohash=rows[0].geohash, measures=rows[0].measures,
                         tags=rows[0].tags, parent_device_id=rows[0].parent_device_id, latitude=rows[0].latitude,
                         longitude=rows[0].longitude)
 
@@ -250,7 +267,6 @@ class CassandraWorker(object):
         pass
 
     def write_data(self, device_uuid, timepoint, tuples):
-        # TODO figure out how to best create api for writing data.
         self.log.debug("before column wrangling")
 
         # check in cache of registerd uuids

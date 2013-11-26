@@ -3,8 +3,9 @@ __author__ = 'chriswhsu'
 import unittest
 import uuid
 import time
-
-from crest.sense.cassandraworker import Device, CassandraWorker
+from crest.sense.measure import Measure
+from crest.sense.device import Device
+from crest.sense.cassandraworker import CassandraWorker
 
 
 class TestCassandraWorker(unittest.TestCase):
@@ -23,11 +24,20 @@ class TestCassandraWorker(unittest.TestCase):
         self.sns.registered_uuids = []
         self.sns.log.info("tearDown: DONE truncating data table.")
 
+    def test_measure_creation(self):
+        """Test for successful instantiation and ersisting of device"""
+
+        measure = Measure(name='Temp', description='Temperature in Centigrade', uom='Degrees C', datatype='Float')
+
+        self.sns.register_measure(measure)
+        # just want to make it here without abort.
+
     def test_device_creation(self):
         """Test for successful persisting of a new device."""
         device = Device(external_identifier='tdc', name="tdc_name",
                         device_uuid=uuid.uuid4())
         self.sns.register_device(device)
+        # just want to make it here without abort.
 
     def test_single_external_id(self):
         """Test retrieval of device by external_identifier"""
@@ -41,7 +51,7 @@ class TestCassandraWorker(unittest.TestCase):
     def test_device_with_measures(self):
         """Test creating a device with associated measures"""
         device = Device(external_identifier='testSingle', name='testDevice2',
-                        measures=['volts', 'total_watts'])
+                        measures={'volts', 'total_watts'})
         self.sns.register_device(device)
         device_uuid = self.sns.get_device_id_by_external_id('testSingle')
 
@@ -51,11 +61,11 @@ class TestCassandraWorker(unittest.TestCase):
     def test_get_device_by_measure(self):
         """Test retrieval of device by external_identifier"""
         device = Device(external_identifier='testSingle', name='testDevice2',
-                        measures=['volts', 'total_watts'])
+                        measures={'volts', 'total_watts'})
         the_device = self.sns.register_device(device)
         self.sns.log.info('start device creation')
         for x in range(2):
-            device2 = Device(external_identifier='tdc_%s' % x, name="tdc_name_%s" % x, measures=['temp', 'humidity'])
+            device2 = Device(external_identifier='tdc_%s' % x, name="tdc_name_%s" % x, measures={'temp', 'humidity'})
             self.sns.register_device(device2)
             self.sns.log.debug('Done with device: %s', x)
         self.sns.log.info('done with device creation, try retrieval')

@@ -22,8 +22,9 @@ class Device:
 
 
         # prevent inconsistant geospatial data from making it into repository
+        # rederive lat / long
         if geohash and (latitude or longitude):
-            raise Exception("don't populate both geohash and lat / long")
+            (latitude, longitude) = gh.decode(geohash)
 
         # but populate both to facilitate queries that need lat/long data.
         if (latitude and longitude) and not geohash:
@@ -41,6 +42,7 @@ class Device:
         self.latitude = latitude
         self.longitude = longitude
 
+        # get a uuid if one wasn't passed in.
         if device_uuid is None:
             self.device_uuid = uuid.uuid4()
         elif isinstance(device_uuid, basestring):
