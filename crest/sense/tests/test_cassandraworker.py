@@ -95,6 +95,21 @@ class TestCassandraWorker(unittest.TestCase):
 
         self.assertEqual(updated_device.name, 'welcome')
 
+
+    def test_update_device(self):
+
+        device = Device(external_identifier='test123', name='testDevice1',
+                        device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
+        self.sns.register_device(device)
+
+        device = Device(external_identifier='test123', name='welcome',
+                        device_uuid=uuid.UUID('b17d661d-7e61-49ea-96a5-68c34e83db44'))
+        updated = self.sns.update_device(device)
+
+        updated_device = self.sns.get_device(updated)
+
+        self.assertEqual(updated_device.name, 'welcome')
+
     def test_geohash(self):
         """Test retrieval by distance from geohash"""
 

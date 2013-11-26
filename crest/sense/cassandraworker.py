@@ -91,6 +91,43 @@ class CassandraWorker(object):
             device.longitude)))
         return device.device_uuid
 
+
+    def update_device(self, device):
+
+        # enforce external_id uniqueness across entire device table.
+        check = self.session.execute("select * from devices where external_identifier = %s",
+                                     parameters=[device.external_identifier])
+        if len(check) == 1:
+            if device.device_uuid == check[0].device_uuid:
+                pass
+            else:
+                raise Exception("Device with the same external_identifier already exists")
+
+        if len(check) > 1:
+            raise Exception("we should never have more than one, please resolve data issue.")
+
+        prepared = self.prepare_shared("""
+          update devices set geohash = ?,
+                             name = ?,
+                             external_identifier = ?,
+                             measures = ?,
+                             tags = ?,
+                             parent_device_id = ?,
+                             latitude = ?,
+                             longitude = ?
+                where device_uuid = ?
+         """)
+
+        self.session.execute(prepared.bind((
+            device.geohash, device.name, device.external_identifier,
+            device.measures,
+            device.tags,
+            device.parent_device_id,
+            device.latitude,
+            device.longitude,
+            device.device_uuid)))
+        return device.device_uuid
+
     def get_all_devices(self):
         query = "SELECT * from devices"
         rows = self.session.execute(query)
