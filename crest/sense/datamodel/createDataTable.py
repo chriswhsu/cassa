@@ -4,11 +4,11 @@ from crest.sense.cassandraworker import CassandraWorker
 
 sns = CassandraWorker(test=True)
 
-# sns.session.execute("""drop table if exists data""")
-# sns.log.info('dropped table data.')
+sns.session.execute("""drop table data""")
+sns.log.info('dropped table data.')
 
 sns.session.execute("""CREATE TABLE data (
-                          device_id uuid,
+                          device_uuid uuid,
                           day timestamp,
                           tp timestamp,
                           geohash text,
@@ -23,7 +23,7 @@ sns.session.execute("""CREATE TABLE data (
                           wind_dir float,
                           wind_speed float,
                           rfid_scan boolean,
-                          PRIMARY KEY ((device_id,day),tp)
+                          PRIMARY KEY ((device_uuid,day),tp)
                         ) WITH
                           clustering order by (tp DESC) AND
                           compression={'sstable_compression': 'SnappyCompressor', 'chunk_length_kb': '512'}

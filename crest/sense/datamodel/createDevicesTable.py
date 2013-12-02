@@ -1,22 +1,14 @@
-import logging
-from cassandra.cluster import Cluster
-from time import sleep
+__author__ = 'chriswhsu'
+
+from crest.sense.cassandraworker import CassandraWorker
+
+sns = CassandraWorker(test=True)
+
+sns.session.execute("""drop table devices""")
+sns.log.info('dropped table devices.')
 
 
-log = logging.getLogger()
-log.setLevel('DEBUG')
-handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
-log.addHandler(handler)
-
-cluster = Cluster(['128.32.189.228','128.32.189.229','128.32.189.230'])
-session = cluster.connect()
-
-session.execute("""use sense;""")
-#session.execute("""drop table test.devices;""")
-log.info('dropped table devices.')
-
-session.execute("""CREATE TABLE devices (
+sns.session.execute("""CREATE TABLE devices (
                          device_uuid uuid,
                          external_identifier text,
                          geohash text,
@@ -24,16 +16,16 @@ session.execute("""CREATE TABLE devices (
                          longitude float,
                          measures set<text>,
                          name text,
-                         parent_device_id uuid,
+                         parent_device_uuid uuid,
                          tags map<text, text>,
                          PRIMARY KEY (device_uuid)
                        ) WITH
                          compression={'sstable_compression': 'SnappyCompressor'};""")
 
-session.execute("""CREATE INDEX external_id_ind ON devices (external_identifier);""")
+sns.session.execute("""CREATE INDEX external_id_ind ON devices (external_identifier);""")
 
-session.execute("""CREATE INDEX name_ind ON devices (name);""")
+sns.session.execute("""CREATE INDEX name_ind ON devices (name);""")
 
-session.execute("""CREATE INDEX geohash_ind ON devices (geohash);""")
+sns.session.execute("""CREATE INDEX geohash_ind ON devices (geohash);""")
 
-session.execute("""CREATE INDEX parent_device_id_ind ON devices (parent_device_id);""")
+sns.session.execute("""CREATE INDEX parent_device_uuid_ind ON devices (parent_device_uuid);""")

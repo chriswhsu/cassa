@@ -9,13 +9,13 @@ import pytz
 from cassandra.cluster import Cluster
 
 from crest.sense.device import Device
-from crest.sense.measure import Measure
 
 
 class CassandraWorker(object):
     # a prepared statement to share across multiple writes
     prepared_statements = dict()
     registered_uuids = []
+    external_id_to_dev_uuid = dict()
 
     # share prepared statments transparently by calling this instead of session.prepare.
     def prepare_shared(self, prepared):
@@ -28,6 +28,7 @@ class CassandraWorker(object):
             self.prepared_statements[cql_hash] = self.session.prepare(prepared)
 
         return self.prepared_statements[cql_hash]
+
 
     def __init__(self, my_cluster=None, my_port=None, my_keyspace=None, test=True):
         config = ConfigParser.ConfigParser()
@@ -80,7 +81,6 @@ class CassandraWorker(object):
         pass
 
 
-
     def register_device(self, device):
 
         # enforce external_id uniqueness across entire device table.
@@ -101,7 +101,7 @@ class CassandraWorker(object):
         self.log.debug('prepare statement')
 
         prepared = self.prepare_shared("""
-          insert into devices (device_uuid, geohash, name, external_identifier, measures, tags, parent_device_id,
+          insert into devices (device_uuid, geohash, name, external_identifier, measures, tags, parent_device_uuid,
                                 latitude, longitude)
            values
           (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -112,7 +112,7 @@ class CassandraWorker(object):
             device.device_uuid, device.geohash, device.name, device.external_identifier,
             device.measures,
             device.tags,
-            device.parent_device_id,
+            device.parent_device_uuid,
             device.latitude,
             device.longitude)))
         self.log.debug('done with registering device')
@@ -120,6 +120,10 @@ class CassandraWorker(object):
 
 
     def update_device(self, device):
+
+        # clear cache in case external_identifier is changing:
+
+        self.external_id_to_dev_uuid = dict()
 
         # enforce external_id uniqueness across entire device table.
         check = self.session.execute("select * from devices where external_identifier = %s",
@@ -139,7 +143,7 @@ class CassandraWorker(object):
                              external_identifier = ?,
                              measures = ?,
                              tags = ?,
-                             parent_device_id = ?,
+                             parent_device_uuid = ?,
                              latitude = ?,
                              longitude = ?
                 where device_uuid = ?
@@ -149,7 +153,7 @@ class CassandraWorker(object):
             device.geohash, device.name, device.external_identifier,
             device.measures,
             device.tags,
-            device.parent_device_id,
+            device.parent_device_uuid,
             device.latitude,
             device.longitude,
             device.device_uuid)))
@@ -166,7 +170,7 @@ class CassandraWorker(object):
         for row in rows:
             devices.append(Device(external_identifier=row.external_identifier, name=row.name,
                                   device_uuid=row.device_uuid, geohash=row.geohash, measures=row.measures,
-                                  tags=row.tags, parent_device_id=row.parent_device_id, latitude=row.latitude,
+                                  tags=row.tags, parent_device_uuid=row.parent_device_uuid, latitude=row.latitude,
                                   longitude=row.longitude))
 
         return devices
@@ -188,12 +192,28 @@ class CassandraWorker(object):
 
         device = Device(external_identifier=rows[0].external_identifier, name=rows[0].name,
                         device_uuid=rows[0].device_uuid, geohash=rows[0].geohash, measures=rows[0].measures,
-                        tags=rows[0].tags, parent_device_id=rows[0].parent_device_id, latitude=rows[0].latitude,
+                        tags=rows[0].tags, parent_device_uuid=rows[0].parent_device_uuid, latitude=rows[0].latitude,
                         longitude=rows[0].longitude)
 
         return device
 
+
     def get_device_id_by_external_id(self, external_identifier):
+
+        if external_identifier in self.external_id_to_dev_uuid:
+            return self.external_id_to_dev_uuid[external_identifier]
+
+        else:
+            dev_uuid = self._get_device_id_by_external_id(external_identifier)
+
+            if (dev_uuid):
+                self.external_id_to_dev_uuid[external_identifier] = dev_uuid
+                return dev_uuid
+            else:
+                return None
+
+
+    def _get_device_id_by_external_id(self, external_identifier):
         query = "SELECT device_uuid from devices where external_identifier = ?"
         prepared = self.prepare_shared(query)
 
@@ -202,10 +222,16 @@ class CassandraWorker(object):
         try:
             rows = future.result()
             self.log.info('We got %s rows' % len(rows))
+            if len(rows) != 1:
+                self.log.exception('We should have exactly 1 row, we got %s',len(rows))
+                raise Exception
+
             return rows[0].device_uuid
 
         except Exception:
-            self.log.exeception()
+
+            self.log.exception('unhandled exception in _get_device_id_by_external_id')
+            raise
 
     def get_device_ids_by_name(self, name):
 
@@ -219,7 +245,8 @@ class CassandraWorker(object):
             devices = [row.device_uuid for row in rows]
             return devices
         except Exception:
-            self.log.exeception()
+            self.log.exeception('unhandled exception in get_device_ids_by_name')
+            raise
 
     def get_device_ids_by_geohash(self, geohash_value, meters):
         """ get list of device_ids (UUID) based on distance from reference point
@@ -255,7 +282,7 @@ class CassandraWorker(object):
         match_dev = []
 
         for dev in devices:
-            if(dev.measures):
+            if (dev.measures):
                 if measure in dev.measures:
                     match_dev.append(dev.device_uuid)
 
@@ -265,6 +292,11 @@ class CassandraWorker(object):
         """ Return device_uuids that contain specific tags."""
         # TODO implement method get_device_uuids_by_tags
         pass
+
+    def write_data_with_ext_id(self, external_id, timepoint, tuples):
+        dev_uuid = self.get_device_id_by_external_id(external_id)
+        self.write_data(dev_uuid, timepoint, tuples)
+
 
     def write_data(self, device_uuid, timepoint, tuples):
         self.log.debug("before column wrangling")
@@ -290,7 +322,7 @@ class CassandraWorker(object):
             values.append(x[1])
 
         prepared = self.prepare_shared(
-            " Insert into data (device_id, day, tp" + columns + " ) values ( ?, ?, ?" + col_q + ")")
+            " Insert into data (device_uuid, day, tp" + columns + " ) values ( ?, ?, ?" + col_q + ")")
 
         #create utc datetime so we can remove time portion.
         self.log.debug("before pytz")
@@ -326,7 +358,7 @@ class CassandraWorker(object):
         for x in device.measures:
             columns += x + ', '
 
-        query = "SELECT " + columns + "tp FROM data where device_id = ? and day = ?"
+        query = "SELECT " + columns + "tp FROM data where device_uuid = ? and day = ?"
 
         try:
             prepared = self.session.prepare(query)
@@ -335,6 +367,7 @@ class CassandraWorker(object):
             rows = future.result()
             self.log.info('We got %s rows' % len(rows))
         except Exception:
-            self.log.exeception()
+            self.log.exeception('unhandled exception in read_data')
+            raise
         return rows
 

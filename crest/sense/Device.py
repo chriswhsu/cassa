@@ -11,12 +11,12 @@ class Device:
     geohash = None
     measures = None
     tags = None
-    parent_device_id = None
+    parent_device_uuid = None
     latitude = None
     longitude = None
 
     def __init__(self, external_identifier, name, device_uuid=None, geohash=None, measures=None, tags=None,
-                 parent_device_id=None, latitude=None, longitude=None):
+                 parent_device_uuid=None, latitude=None, longitude=None):
         """ initialize new device object
         """
 
@@ -38,7 +38,7 @@ class Device:
         self.geohash = geohash
         self.measures = measures
         self.tags = tags
-        self.parent_device_id = parent_device_id
+        self.parent_device_id = parent_device_uuid
         self.latitude = latitude
         self.longitude = longitude
 

@@ -17,6 +17,7 @@ class TestCassandraWorker(unittest.TestCase):
         self.sns.log.info("tearDown: truncating devices table.")
         self.sns.session.execute('truncate devices')
         self.sns.registered_uuids = []
+        self.sns.external_id_to_dev_uuid = dict()
         self.sns.log.info("tearDown: DONE truncating devices table.")
 
         self.sns.log.info("tearDown: truncating data table.")
@@ -210,6 +211,16 @@ class TestCassandraWorker(unittest.TestCase):
         device_uuid = self.sns.register_device(device)
         self.sns.log.info('start write.')
         self.sns.write_data(device_uuid, time.time(),
+                            (('temp', 35.6), ('humidity', 99), ('solar_rad', 625), ('wind_dir', 23.5)))
+        self.sns.log.info('finish write.')
+        # just hoping to get this far without an exception
+        self.assertEquals(1, 1)
+
+    def test_write_data_multiple_feeds_ext_id(self):
+        device = Device(external_identifier='twdof', name="twdof_name")
+        device_uuid = self.sns.register_device(device)
+        self.sns.log.info('start write.')
+        self.sns.write_data_with_ext_id ('twdof', time.time(),
                             (('temp', 35.6), ('humidity', 99), ('solar_rad', 625), ('wind_dir', 23.5)))
         self.sns.log.info('finish write.')
         # just hoping to get this far without an exception
