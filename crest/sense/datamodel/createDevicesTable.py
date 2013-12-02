@@ -4,8 +4,8 @@ from crest.sense.cassandraworker import CassandraWorker
 
 sns = CassandraWorker(test=True)
 
-sns.session.execute("""drop table devices""")
-sns.log.info('dropped table devices.')
+#sns.session.execute("""drop table devices""")
+#sns.log.info('dropped table devices.')
 
 
 sns.session.execute("""CREATE TABLE devices (

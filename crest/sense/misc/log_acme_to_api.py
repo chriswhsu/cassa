@@ -63,7 +63,7 @@ def main(argv):
                     power = v['tp'][reading_id]
                     apparentpower = v['ap'][reading_id]
                     energy = v['te'][reading_id]
-                    sns.log.info('i = %s, ts = %s, power = %s, energy = %s', i, ts, power, energy)
+                    sns.log.debug('i = %s, ts = %s, power = %s, energy = %s', i, ts, power, energy)
                     sns.write_data_with_ext_id(external_id=i, timepoint=ts, tuples=(
                         ('aparPower', apparentpower), ('actPower', power), ('actEnergy', energy) ))
 

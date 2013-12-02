@@ -26,7 +26,8 @@ class Device:
         if geohash and (latitude or longitude):
             (latitude, longitude) = gh.decode(geohash)
 
-        # but populate both to facilitate queries that need lat/long data.
+        # but populate both to facilitate queries that need lat/long data
+
         if (latitude and longitude) and not geohash:
             geohash = gh.encode(latitude, longitude)
 
