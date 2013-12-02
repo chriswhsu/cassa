@@ -1,7 +1,7 @@
 __author__ = 'chriswhsu'
 
-from crest.sense import cassandraworker
-from crest.sense.device import Device
+from sense import cassandraworker
+from sense.device import Device
 
 
 def build_worker(test=True):
