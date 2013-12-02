@@ -6,7 +6,7 @@ CREATE TABLE devices (
   longitude float,
   measures set<text>,
   name text,
-  parent_device_id uuid,
+  parent_device_uuid uuid,
   tags map<text, text>
 ) WITH
   bloom_filter_fp_chance=0.010000 AND
@@ -26,4 +26,4 @@ CREATE INDEX name_ind ON devices (name);
 
 CREATE INDEX geohash_ind ON devices (geohash);
 
-CREATE INDEX parent_device_id_ind ON devices (parent_device_id);
+CREATE INDEX parent_device_uuid_ind ON devices (parent_device_uuid);

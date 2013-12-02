@@ -2,11 +2,11 @@ __author__ = 'chriswhsu'
 
 from crest.sense.cassandraworker import CassandraWorker
 
-sns = CassandraWorker(test=True)
+sns = CassandraWorker(test=False)
 
 #sns.session.execute("""drop table devices""")
 #sns.log.info('dropped table devices.')
-
+#
 
 sns.session.execute("""CREATE TABLE devices (
                          device_uuid uuid,
